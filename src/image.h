@@ -5,6 +5,10 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+#include <set>
+#include <cmath>
+
 
 namespace agl {
 
@@ -17,6 +21,22 @@ struct Pixel {
     unsigned char g;
     unsigned char b;
 };
+inline bool operator<(const Pixel& lhs, const Pixel& rhs)
+{
+  return lhs.r < rhs.r;
+}
+
+
+float distance(Pixel p, Pixel po);
+
+// /**
+//  * @brief Holder for square kernel of unknow size
+//  * 
+//  */
+// struct Kernel {
+//     int size;
+//     vector<int> k;
+// };
 
 
 /**
@@ -155,6 +175,10 @@ class Image {
   // Assumes that the two images are the same size
   Image difference(const Image& other) const;
 
+  // Apply a givent texture to mid tone 
+  // testing 
+  Image crosshatch(const Image& other) const;
+
   // Apply the following calculation to the pixels in 
   // our image and the given image:
   //    result.pixel = max(this.pixel, other.pixel)
@@ -174,7 +198,7 @@ class Image {
   // makes the image more vibrant by the specified ammount
   Image saturate(unsigned char ammount) const;
   // makes the darkest values darker and the lightest values lighter
-  Image contrast(unsigned char ammount) const;
+  Image contrast(unsigned char ammount, unsigned char cutoff) const;
 
   // applies red-teal filter
   Image redTeal(unsigned char ammount) const;
@@ -184,11 +208,29 @@ class Image {
   // unsigned char average(struct Pixel rgb, bool greyscale = false);
 
   // Sobel Edge Detector
-  Image edgeFinder()const;  
+  Image sobel()const; 
+
+  // Sobel Edge Detector
+  Image tensor()const;  
 
   // box blur
   Image blur() const;
 
+  // color quant based on resize(), count is pallet size
+  Image quantization(unsigned char count) const;
+
+  // Gaussian blur
+  Image gaussian(float sigma) const;
+
+  // subtract given image from image, scaled by tau
+  Image dog(const Image& other, float tau) const;
+
+
+  // threshold fn
+  Image threshold(float k, float phi) const;
+
+  //gaussian vingette
+  Image vingette() const;
 
 
   // Apply gamma correction
@@ -205,6 +247,8 @@ class Image {
 
   // Convert the image to grayscale
   Image grayscale() const;
+
+  Image toTile(const Image& tile) const;
 
   // return a bitmap version of this image
   Image colorJitter(int size) const;

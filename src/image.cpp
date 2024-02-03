@@ -7,6 +7,8 @@
 #include "stb/stb_image_write.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
+#include <vector>
+#include <cmath>
 
 namespace agl {
 
@@ -206,8 +208,16 @@ Image Image::flipVertical() const {
 }
 
 Image Image::rotate90() const {
-   Image result(0, 0);
-  
+   Image result(h, w);
+   Pixel rgb; 
+
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j<w; j++){
+         rgb = get(i,j);
+
+         result.set(j,i,rgb);
+      }
+   }
    return result;
 }
 
@@ -252,39 +262,195 @@ Image Image::swirl() const {
    return result;
 }
 
-Image Image::add(const Image& other) const {
-   Image result(0, 0);
-  
-   return result;
-}
 
 Image Image::subtract(const Image& other) const {
-   Image result(0, 0);
    
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   Image o(w,h);
+   o = other.resize(w,h);
+   int red;
+   int green;
+   int blue;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel toSet;
+         red = (get(i,j).r) - (o.get(i,j).r);
+         green = (get(i,j).g) - (o.get(i,j).g);
+         blue = (get(i,j).b) - (o.get(i,j).b);
+         // if (red > 255){red = 255;}
+         // if (green > 255){green = 255;}
+         // if (blue > 255){blue = 255;}
+         if (red < 0){red = 0;}
+         if (green < 0){green = 0;}
+         if (blue < 0){blue = 0;}
+         toSet.r = red;
+         toSet.g = green; 
+         toSet.b = blue;
+         result.set(i,j,toSet);
+      }
+   }
    return result;
 }
 
 Image Image::multiply(const Image& other) const {
-   Image result(0, 0);
-   
+   Image o(w,h);
+   o = other.resize(w,h);
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   int red;
+   int green;
+   int blue;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel toSet;
+         red = (get(i,j).r) * (o.get(i,j).r);
+         green = (get(i,j).g) * (o.get(i,j).g);
+         blue = (get(i,j).b) * (o.get(i,j).b);
+         if (red > 255){red = 255;}
+         if (green > 255){green = 255;}
+         if (blue > 255){blue = 255;}
+         // if (red < 0){red = 0;}
+         // if (green < 0){green = 0;}
+         // if (blue < 0){blue = 0;}
+         toSet.r = red;
+         toSet.g = green; 
+         toSet.b = blue;
+         result.set(i,j,toSet);
+      }
+   }
    return result;
 }
 
 Image Image::difference(const Image& other) const {
-   Image result(0, 0);
-  
+   Image o(w,h);
+   o = other.resize(w,h);
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   int red;
+   int green;
+   int blue;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel toSet;
+         red = (get(i,j).r) + (o.get(i,j).r);
+         green = (get(i,j).g) + (o.get(i,j).g);
+         blue = (get(i,j).b) + (o.get(i,j).b);
+         if (red > 255){red = 255;}
+         if (green > 255){green = 255;}
+         if (blue > 255){blue = 255;}
+         // if (red < 0){red = 0;}
+         // if (green < 0){green = 0;}
+         // if (blue < 0){blue = 0;}
+         toSet.r = red;
+         toSet.g = green; 
+         toSet.b = blue;
+         result.set(i,j,toSet);
+      }
+   }
    return result;
 }
 
+
+Image Image::crosshatch(const Image& other) const {
+   Image a(w,h);
+   Image b(w,h);
+   Image c(w,h);
+   a = toTile(other);
+   b = toTile(other.rotate90());
+   b = a.subtract(b);
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel light = a.get(i,j);
+         struct Pixel med = b.get(i,j);
+         Pixel rgb = get(i,j);
+         if (rgb.r<50){result.set(i,j,med);}
+         else if (rgb.r<130){result.set(i,j,light);}
+         else {result.set(i,j,Pixel{255,255,255});}
+      }
+   }
+   return result;
+}
+
+Image Image::add(const Image& other) const {
+   
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   Image o(w,h);
+   o = other.resize(w,h);
+   int red;
+   int green;
+   int blue;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel toSet;
+         red = (get(i,j).r) + (o.get(i,j).r);
+         green = (get(i,j).g) + (o.get(i,j).g);
+         blue = (get(i,j).b) + (o.get(i,j).b);
+         if (red > 255){red = 255;}
+         if (green > 255){green = 255;}
+         if (blue > 255){blue = 255;}
+         // if (red < 0){red = 0;}
+         // if (green < 0){green = 0;}
+         // if (blue < 0){blue = 0;}
+         toSet.r = red;
+         toSet.g = green; 
+         toSet.b = blue;
+         result.set(i,j,toSet);
+      }
+   }
+   return result;
+}
+
+//flip
+//rotate 90
+//rotate 45?
+
 Image Image::lightest(const Image& other) const {
-   Image result(0, 0);
-  
+   Image o(w,h);
+   o = other.resize(w,h);
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   int red;
+   int green;
+   int blue;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel toSet;
+         if ((get(i,j).r) > (o.get(i,j).r)){red = get(i,j).r;} else {red = o.get(i,j).r;}
+         if ((get(i,j).g) > (o.get(i,j).g)){green = get(i,j).g;} else {green = o.get(i,j).g;}
+         if ((get(i,j).b) > (o.get(i,j).b)){blue = get(i,j).b;} else {blue = o.get(i,j).b;}
+         toSet.r = red;
+         toSet.g = green; 
+         toSet.b = blue;
+         result.set(i,j,toSet);
+      }
+   }
    return result;
 }
 
 Image Image::darkest(const Image& other) const {
-   Image result(0, 0);
-  
+   Image o(w,h);
+   o = other.resize(w,h);
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   int red;
+   int green;
+   int blue;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel toSet;
+         if ((get(i,j).r) < (o.get(i,j).r)){red = get(i,j).r;} else {red = o.get(i,j).r;}
+         if ((get(i,j).g) < (o.get(i,j).g)){green = get(i,j).g;} else {green = o.get(i,j).g;}
+         if ((get(i,j).b) < (o.get(i,j).b)){blue = get(i,j).b;} else {blue = o.get(i,j).b;}
+         toSet.r = red;
+         toSet.g = green; 
+         toSet.b = blue;
+         result.set(i,j,toSet);
+      }
+   }
    return result;
 }
 
@@ -366,7 +532,7 @@ Image Image::saturate(unsigned char ammount) const{
 
 }
 
-Image Image::contrast(unsigned char ammount) const{
+Image Image::contrast(unsigned char ammount, unsigned char cutoff) const{
    Image result(w, h);
    unsigned char a = ammount;
    unsigned char r,g,b = 0;
@@ -374,7 +540,7 @@ Image Image::contrast(unsigned char ammount) const{
       for(int j = 0; j < w; j++){
          struct Pixel from = get(i,j);
          int sum = from.r + from.g + from.b;
-         if(sum>(127*3)){
+         if(sum>(cutoff*3)){
             (from.r + a < 255)? (r = from.r + a) : (r = 255);
             (from.g + a < 255)? (g = from.g + a) : (g = 255);
             (from.b + a < 255)? (b = from.b + a) : (b = 255);
@@ -417,7 +583,7 @@ Image Image::redTeal(unsigned char ammount) const{
    
 }
 
-  // returns the average va;ue [0,255] of a given pixel
+  // returns the average value [0,255] of a given pixel
   // optional greyscale flag
 unsigned char average(struct Pixel rgb, bool greyscale = false){
    if(greyscale){
@@ -427,7 +593,7 @@ unsigned char average(struct Pixel rgb, bool greyscale = false){
    }
 
 }
-Image Image::edgeFinder() const {
+Image Image::sobel() const {
    Image result(w,h);
    int Gx[9] = {-1,0,1,-2,0,2,-1,0,1};
    int Gy[9] = {-1,-2,-1,0,0,0,1,2,1};
@@ -526,6 +692,285 @@ Image Image::blur() const {
 }
 
 
+//gaussian vingette
+Image Image::vingette() const {
+   Image result(w,h);
+      std::vector<float> k;
+      int kernel_size = std::min(w,h);
+      float sigma = kernel_size/6.0f;
+      float frac = (2*M_PI*pow(sigma,2));
+      int half = floor(kernel_size/2);
+
+      for (int i = -1*half; i <= half; i++) {
+         for (int j = -1*half; j <= half; j++) {
+            float val = (pow(M_E,-1*(pow(i,2)+pow(j,2))/(2*pow(sigma,2))));
+            k.push_back(val);
+         }
+      }
+      // loop through image
+      for(int i = 0; i < h; i++){
+         for(int j = 0; j < w; j++){ 
+            // if we are not in kernel, don't evaluate just set to black
+            // if ((w>h)?(j<kernel_size/2 || j>kernel_size*1.5): (i<kernel_size/2 || i>kernel_size*1.5)){
+            //    result.set(i,j,Pixel{0,0,0});
+            // }
+            Pixel from = get(i,j);
+            //move kernel index half of the longer side + half the kernel size
+               
+            int index = (((float)(i)/(float)(h))*kernel_size)*kernel_size + ((float)j/(float)w)*kernel_size;
+            float f = k[index];
+            Pixel to = Pixel{from.r * f,from.g * f,from.b * f};
+            result.set(i,j,to);
+         }
+      }
+      
+return result;
+}
+
+float distance(Pixel p, Pixel po) {
+  // d = √ [(x2 – x1)2 + (y2 – y1)2 + (z2 – z1)2]
+  int r = p.r-po.r;
+  int g = p.g-po.g;
+  int b = p.b-po.b;
+  float d = pow(r,2) + pow(g,2) + pow(b,2);
+  return sqrt(d);
+}
+
+Image Image::quantization(unsigned char count) const{
+   
+   Image result(w,h);
+   if(_data == nullptr ){return result;}
+   float scale = sqrt(((float)count)/(float)(h*w));
+   unsigned char height = round(scale*h);
+   unsigned char width = round(scale*w);
+ 
+   Image pallet = Image(width, height);
+   std::set<Pixel> vec_pal;
+   vec_pal.insert(Pixel{0,0,0});
+   vec_pal.insert(Pixel{255,255,255});
+   
+   for(int i = 0; i < pallet.height(); i++){
+      for(int j = 0; j < pallet.width(); j++){ 
+         vec_pal.insert(pallet.get(i,j));
+      }
+   }
+
+   // std::vector<Pixel> set_pal(vec_pal.begin(), vec_pal.end());
+   // 3 sets, rotated values
+   // r = rgb
+   // g = grb
+   for (Pixel c : vec_pal){
+      Pixel set = Pixel{c.g,c.r,c.b};
+      // set.push_back(set)
+   }
+   // b = brg
+   for (Pixel c : vec_pal){
+      Pixel set = Pixel{c.b,c.g,c.r};
+      // set.push_back(set)
+   }
+
+            // float d = distance(Pixel{c.g,c.r,c.b}, col);
+            // float d = distance(Pixel{c.b,c.g,c.g}, col);
+
+   // make set
+   // copy into 3 vectors sorted respectivly by rgb
+   // for each pixel in image
+   // closest r 
+   // closest g
+   // closest b
+
+   // the size of the dot product
+   // sorted by distance to origin
+   // in dist find vec of pt to origin 
+   //reassign colors to original image
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j < w; j++){ 
+         int min = 500;
+         Pixel col = get(i,j);
+         Pixel to_col = Pixel{255,0,0};
+         // beter dist fn for speed
+         // set sorted by distance 3 dif cat?
+         // turn set into vector sorted by r,g,b (6 comparisons per loop)
+         for (Pixel c : vec_pal){
+            float d = distance(c, col);
+            if (d<min){
+               min = d;
+               to_col = c;
+            }
+         }
+         result.set(i,j,to_col);
+      }
+   }
+   return result;
+   
+}
+
+
+Image Image::tensor() const {
+   Image result(w,h);
+   int Gx[9] = {-1,0,1,-2,0,2,-1,0,1};
+   int Gy[9] = {-1,-2,-1,0,0,0,1,2,1};
+
+   unsigned char pixx,pixy;
+   int sumx, sumy;
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j<w; j++){ 
+         sumx = 0;
+         sumy = 0;
+         for(int x = i-1, idx = 0; x<=i+1; x++, idx++){
+            for(int y = j-1, idy = 0; y<=j+1; y++, idy++){
+               if(x < h && y < w && 0<=x && 0<=y){
+                  sumx += (Gx[idx*3 + idy])*((int) average(get(x,y)));
+                  sumy += (Gy[idx*3 + idy])*((int) average(get(x,y)));
+               } else {
+                  sumx += (Gx[idx*3 + idy])*((int) average(get(i,j)));
+                  sumy += (Gy[idx*3 + idy])*((int) average(get(i,j)));
+               }
+            }
+         }
+         sumy>255 ? pixy=255 : (sumy<0 ? pixy=0 : (pixy=sumy));
+         sumx>255 ? pixx=255 : (sumx<0 ? pixx=0 : (pixx=sumx));
+         int ST[4] = {sumx*sumx, sumx*sumy, sumx*sumy, sumy*sumy};
+         float e1 = (ST[0] + ST[4] + sqrt(pow(ST[0]-ST[4],2)+4*pow(ST[1],2)))/2;
+         float e2 = (ST[0] + ST[4] - sqrt(pow(ST[0]-ST[4],2)+4*pow(ST[1],2)))/2;
+         unsigned char t1 = e1-ST[0];
+         unsigned char t2 = -1*ST[1];
+         float t[2] = {e1-ST[0],-1*ST[1]}; 
+
+         result.set(i,j,Pixel{(unsigned char)t[0], (unsigned char)t[1], 0});
+         // result.set(i,j,Pixel{pixx,pixy,0});
+      }
+   }
+   
+   return result;
+}
+
+
+  Image Image::gaussian(float sigma) const{
+
+   //build gaussian kernel
+      std::vector<float> k;
+      float frac = (2*M_PI*pow(sigma,2));
+      int size = ceil(sigma*6);
+      if (size <3){size=3;} else if (size>20){size =20;}
+      int half = floor(size/2);
+
+      for (int i = -1*half; i <= half; i++) {
+         for (int j = -1*half; j <= half; j++) {
+            float val = (pow(M_E,-1*(pow(i,2)+pow(j,2))/(2*pow(sigma,2))));
+            k.push_back(val);
+         }
+      }
+
+
+      Image result(w, h);
+
+
+      // kernel ops
+      struct Pixel pix;
+      float sumr, sumg, sumb;
+      for(int i = 0; i < h; i++){
+         for(int j = 0; j<w; j++){ 
+            pix = {0,0,0};
+            sumr = 0;
+            sumg = 0;
+            sumb = 0;
+            for(int x = i-half, idx = 0; x<=i+half; x++, idx++){
+               for(int y = j-half, idy = 0; y<=j+half; y++, idy++){
+                  float temp = k[idx*size + idy];
+                  if(x < h && y<w && 0<=x && 0<=y){ ////here hey ary here HEY 9:50
+                     sumr += (get(x,y).r)*temp;
+                     sumg += (get(x,y).g)*temp;
+                     sumb += (get(x,y).b)*temp;
+                  } else {
+                     sumr += (get(i,j).r)*temp;
+                     sumg += (get(i,j).g)*temp;
+                     sumb += (get(i,j).b)*temp;
+                  }
+               }
+            }
+            sumr = sumr/frac;
+            sumg = sumg/frac;
+            sumb = sumb/frac;
+            if(sumr>255){
+               pix.r = 255;
+            } else if(sumr<0){
+               pix.r = 0;
+            } else{
+               pix.r = sumr;
+            }
+
+            if(sumg>255){
+               pix.g = 255;
+            } else if(sumg<0){
+               pix.g = 0;
+            } else{
+               pix.g = sumg;
+            }
+
+            if(sumb>255){
+               pix.b = 255;
+            } else if(sumb<0){
+               pix.b = 0;
+            } else{
+               pix.b = sumb;
+            }
+            result.set(i,j,pix);
+         }
+      }
+
+      return result;
+
+  }
+
+   
+Image Image::threshold(float k, float phi) const{
+   Image result(w, h);
+   Pixel rgb;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j<w ; j++){
+         rgb = get(i,j);
+         unsigned char inGrey = (rgb.r +rgb.g + rgb.b)/3;
+         if (inGrey> k){
+            result.set(i,j,Pixel{255,255,255});
+         } else {
+            unsigned char outGrey = 255*(1 + tanh(phi*(inGrey-k)));
+            // unsigned char outGrey = 127.5*(1 + tanh(phi*(inGrey-k*0.9f)));
+            result.set(i,j,Pixel{outGrey, outGrey, outGrey});
+         }
+      }
+   }
+   return result;
+}
+
+
+Image Image::dog(const Image& other, float tau) const {
+   Image result(w,h);
+   if(_data == nullptr || other.data() == nullptr){return result;}
+   float red;
+   float green;
+   float blue;
+   for(int i = 0; i < h ; i++){
+      for(int j = 0; j < w ; j++){
+         struct Pixel toSet;
+         red = (1.0f+tau)*((float)get(i,j).r) - tau*((float)other.get(i,j).r);
+         green = (1.0f+tau)*((float)get(i,j).g) - tau*((float)other.get(i,j).g);
+         blue = (1.0f+tau)*((float)get(i,j).b) - tau*((float)other.get(i,j).b);
+         if (red > 255){red = 255;}
+         if (green > 255){green = 255;}
+         if (blue > 255){blue = 255;}
+         if (red < 0){red = 0;}
+         if (green < 0){green = 0;}
+         if (blue < 0){blue = 0;}
+         toSet.r = red;
+         toSet.g = green; 
+         toSet.b = blue;
+         result.set(i,j,toSet);
+      }
+   }
+   return result;
+}
+
 Image Image::gammaCorrect(float gamma) const {
 
    Image result(w, h);
@@ -543,14 +988,17 @@ Image Image::gammaCorrect(float gamma) const {
 }
 
 Image Image::alphaBlend(const Image& other, float alpha) const {
+
+   Image o(w,h);
+   o = other.resize(w,h);
    Image result(w,h);
    if(_data == nullptr || other.data() == nullptr){return result;}
    for(int i = 0; i < h ; i++){
       for(int j = 0; j < w ; j++){
          struct Pixel toSet;
-         toSet.r = (get(i,j).r)*(1-alpha) + (other.get(i,j).r)*(alpha);
-         toSet.g = (get(i,j).g)*(1-alpha) + (other.get(i,j).g)*(alpha);
-         toSet.b = (get(i,j).b)*(1-alpha) + (other.get(i,j).b)*(alpha);
+         toSet.r = (get(i,j).r)*(1-alpha) + (o.get(i,j).r)*(alpha);
+         toSet.g = (get(i,j).g)*(1-alpha) + (o.get(i,j).g)*(alpha);
+         toSet.b = (get(i,j).b)*(1-alpha) + (o.get(i,j).b)*(alpha);
          result.set(i,j,toSet);
       }
    }
@@ -573,14 +1021,17 @@ Image Image::invert() const {
 }
 
 
+
+
 Image Image::cquant() const {
    Image result(w, h);
+   float d = 81;
    for(int i = 0; i < h; i++){
       for(int j = 0; j < w; j++){
          struct Pixel from = get(i,j);
-         unsigned char r = (((unsigned char)(((float)from.r)/50.0)))*50;
-         unsigned char g = (((unsigned char)(((float)from.g)/50.0)))*50;
-         unsigned char b = (((unsigned char)(((float)from.b)/50.0)))*50;
+         unsigned char r = (((unsigned char)(((float)from.r)/d)))*d;
+         unsigned char g = (((unsigned char)(((float)from.g)/d)))*d;
+         unsigned char b = (((unsigned char)(((float)from.b)/d)))*d;
 
          result.set(i,j,Pixel{r,g,b});
       }
@@ -621,14 +1072,56 @@ Image Image::grayscale() const {
       }
    }
 
-   
+   return result;
+}
+
+//tiles given image over the size of the image
+Image Image::toTile(const Image& tile) const {
+   Image result(w, h);
+   result.fill(Pixel{255,255,255});
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j < w; j++){
+         struct Pixel from = tile.get(i%tile.height(),j%tile.width());
+         result.set(i,j,from);
+      }
+   }
    return result;
 }
 
 Image Image::colorJitter(int size) const {
-   Image image(0, 0);
-  
-   return image;
+   Image result(w, h);
+   result.fill(Pixel{0,0,0});
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j < w; j++){
+         struct Pixel from = get(i,j);
+         struct Pixel to;
+         int add;
+
+         // green
+         to = result.get(i,j);
+         add = from.g + to.g;
+         if (add>255){add=255;}
+         struct Pixel center = Pixel{to.r,(unsigned char) add,to.b};
+         result.set(i,j,center);
+         
+         // red
+         to = result.get(i,j-size);
+         add = from.r + to.r;
+         if (add>255){add=255;}
+         struct Pixel left = Pixel{(unsigned char) add,to.g,to.b};
+         if ((int)j - size > 0) {result.set(i,j-size,left);}
+
+         // blue
+         to = result.get(i,j+size);
+         add = from.b + to.b;
+         if (add>255){add=255;}
+         struct Pixel right = Pixel{to.r,to.g,(unsigned char) add};
+         if ((int)j + size < result.w) {result.set(i,j+size,right);}
+         
+      }
+   }
+
+   return result;
 }
 
 Image Image::bitmap(int size) const {
@@ -638,8 +1131,12 @@ Image Image::bitmap(int size) const {
 }
 
 void Image::fill(const Pixel& c) {
-
-  }
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j < w; j++){
+         set(i,j,c);
+      }
+   }
+}
 
 
 
