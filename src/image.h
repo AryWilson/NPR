@@ -144,6 +144,8 @@ class Image {
   // Return a sub-Image having the given top,left coordinate and (width, height)
   Image subimage(int x, int y, int w, int h) const;
 
+  
+
   // Replace the portion starting at (row, col) with the given image
   // Clamps the image if it doesn't fit on this image
   void replace(const Image& image, int x, int y);
@@ -210,8 +212,14 @@ class Image {
   // Sobel Edge Detector
   Image sobel()const; 
 
-  // Sobel Edge Detector
-  Image tensor()const;  
+  // Sobel Edge Detector and vector flow build from tensor
+  Image tensor()const; 
+
+  // vector flow build from tensor (not working)
+  Image vfc()const; 
+
+
+  Image vectorgraph()const;  
 
   // box blur
   Image blur() const;
@@ -221,6 +229,8 @@ class Image {
 
   // Gaussian blur
   Image gaussian(float sigma) const;
+  Image dirrected_gaussian(float sigma,Image tensor) const;
+
 
   // subtract given image from image, scaled by tau
   Image dog(const Image& other, float tau) const;

@@ -719,7 +719,7 @@ Image Image::vingette() const {
                
             int index = (((float)(i)/(float)(h))*kernel_size)*kernel_size + ((float)j/(float)w)*kernel_size;
             float f = k[index];
-            Pixel to = Pixel{from.r * f,from.g * f,from.b * f};
+            Pixel to = Pixel{ceil(from.r * f),ceil(from.g * f),ceil(from.b * f)};
             result.set(i,j,to);
          }
       }
@@ -808,41 +808,89 @@ Image Image::quantization(unsigned char count) const{
 
 Image Image::tensor() const {
    Image result(w,h);
+
+   // sobel kernel
    int Gx[9] = {-1,0,1,-2,0,2,-1,0,1};
    int Gy[9] = {-1,-2,-1,0,0,0,1,2,1};
 
    unsigned char pixx,pixy;
    int sumx, sumy;
+   // for each pixel apply sobel kernel
    for(int i = 0; i < h; i++){
       for(int j = 0; j<w; j++){ 
          sumx = 0;
          sumy = 0;
+         // apply sobel kernel
          for(int x = i-1, idx = 0; x<=i+1; x++, idx++){
             for(int y = j-1, idy = 0; y<=j+1; y++, idy++){
                if(x < h && y < w && 0<=x && 0<=y){
-                  sumx += (Gx[idx*3 + idy])*((int) average(get(x,y)));
-                  sumy += (Gy[idx*3 + idy])*((int) average(get(x,y)));
+                  sumx += (Gx[idx*3 + idy]/4.0)*((int) average(get(x,y)));
+                  sumy += (Gy[idx*3 + idy]/4.0)*((int) average(get(x,y)));
                } else {
-                  sumx += (Gx[idx*3 + idy])*((int) average(get(i,j)));
-                  sumy += (Gy[idx*3 + idy])*((int) average(get(i,j)));
+                  sumx += (Gx[idx*3 + idy]/4.0)*((int) average(get(i,j)));
+                  sumy += (Gy[idx*3 + idy]/4.0)*((int) average(get(i,j)));
                }
             }
          }
-         sumy>255 ? pixy=255 : (sumy<0 ? pixy=0 : (pixy=sumy));
-         sumx>255 ? pixx=255 : (sumx<0 ? pixx=0 : (pixx=sumx));
+
+         // construct data
+         // structure tensor
          int ST[4] = {sumx*sumx, sumx*sumy, sumx*sumy, sumy*sumy};
+         // eigen values
          float e1 = (ST[0] + ST[4] + sqrt(pow(ST[0]-ST[4],2)+4*pow(ST[1],2)))/2;
          float e2 = (ST[0] + ST[4] - sqrt(pow(ST[0]-ST[4],2)+4*pow(ST[1],2)))/2;
-         unsigned char t1 = e1-ST[0];
-         unsigned char t2 = -1*ST[1];
-         float t[2] = {e1-ST[0],-1*ST[1]}; 
+         // eigen vectors (should be dirrection of least change)
+         // first eigen vector
+         float t1[2] = {e1-ST[0],-1*ST[1]};
+         // // second eigen vector (only need 1)
+         // float t2[2] = {-1*ST[1],e2-ST[3]}; 
 
-         result.set(i,j,Pixel{(unsigned char)t[0], (unsigned char)t[1], 0});
-         // result.set(i,j,Pixel{pixx,pixy,0});
+         // map unbound vector to 255
+         float mag = sqrt(pow(t1[0],2) + pow(t1[1],2));
+         t1[0] = (((t1[0]/mag) + 1)/2.0)*255;
+         t1[1] = (((t1[1]/mag) + 1)/2.0)*255;
+         result.set(i,j,Pixel{t1[0], t1[1], mag});
+
+         // result.set(i,j,(t1[1]<0)?Pixel{t1[1],0,0}:Pixel{0,t1[1],0});
+         // // green and red tensor flow
+         // sumy>255 ? pixy=255 : (sumy<0 ? pixy=0 : (pixy=sumy));
+         // sumx>255 ? pixx=255 : (sumx<0 ? pixx=0 : (pixx=sumx));
+         // result.set(i,j,Pixel{sumx,sumy,0});
       }
    }
    
    return result;
+}
+
+
+Image Image::vfc() const{
+   Image result(w,h);
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j<w; j++){ 
+
+         // structure tensor
+         Pixel pix = get(i,j);
+         int sumx = pix.r;
+         int sumy = pix.g;
+         int ST[4] = {sumx*sumx, sumx*sumy, sumx*sumy, sumy*sumy};
+         // eigen values
+         float e1 = (ST[0] + ST[4] + sqrt(pow(ST[0]-ST[4],2)+4*pow(ST[1],2)))/2;
+         float e2 = (ST[0] + ST[4] - sqrt(pow(ST[0]-ST[4],2)+4*pow(ST[1],2)))/2;
+         // eigen vectors (should be dirrection of least change)
+         // first eigen vector
+         float t1[2] = {e1-ST[0],-1*ST[1]};
+         // // second eigen vector (only need 1)
+         // float t2[2] = {-1*ST[1],e2-ST[3]}; 
+
+         // map unbound vector to 255?
+         // t1[1] can be negative, t1[0] won't be, use blue to indicate (white=negative, black = positive)
+         result.set(i,j,Pixel{t1[0], std::abs(t1[1]), (t1[1]<0)?255:0});
+
+         // result.set(i,j,(t1[1]<0)?Pixel{t1[1],0,0}:Pixel{0,t1[1],0});
+      }
+   }
+   return result;
+
 }
 
 
@@ -923,6 +971,109 @@ Image Image::tensor() const {
 
   }
 
+  Image Image::dirrected_gaussian(float sigma,Image tensor) const{
+   //assumes tensor was build from image
+
+   //build gaussian kernel
+      std::vector<float> k;
+      float frac = (sqrt(2*M_PI)*sigma);
+      int size = ceil(sigma*6);
+      if (size <3){size=3;} else if (size>20){size =20;}
+      int half = floor(size/2);
+
+      // construct 1d gaussian vector
+      for (int i = -1*half; i <= half; i++) {
+         float val = (pow(M_E,-1*(pow(i,2))/(2*pow(sigma,2))));
+         k.push_back(val);
+
+      }
+
+      Image result(w, h);
+
+      // apply the gaussian vector along the axis of least change (from flow vector chart)
+      // use 'tensor' to calculate the pixels within kernel range to the left and right of the center pixel to scale by respective values in the gaussian vector
+      struct Pixel pix;
+      float sumr, sumg, sumb;
+      // for each pixel in the image
+      for(int i = 0; i < h; i++){
+         for(int j = 0; j<w; j++){ 
+            // start with the center color
+            float f = (k[half]);
+            Pixel c = get(i,j);
+            sumr = f*c.r;
+            sumg = f*c.g;
+            sumb = f*c.b;
+
+            // positive half
+            Pixel vec = tensor.get(i,j);
+            // get the y component of the first eigen vector
+            float vec_y = vec.r/127.5 -1 ; // TBD: depending on construction i think this may have a detrimentally smaller range [0,255] vs [-255,255] of y... 
+            // go to location within kernel specified by vector so loop through gaussian vector not kernel
+            float vec_x = vec.g/127.5 -1;
+            int col_x = i;
+            int col_y = j;
+            for(int x = half; x<size; x++){
+               // get the coordinates of the pixel pointed to by the eigen vec
+               col_x += vec_x>0? vec_x/vec_x : 0; // move right 1 or 0
+               col_y +=  vec_x>0? vec_y/vec_x : vec_y>0?1:0; // move up/down from eigen vec
+
+               // check bound of pixel asking for
+               col_x = (col_x>=0 & col_x<width())?col_x:i;
+               col_y = (col_y>=0 & col_y<height())?col_y:j;
+
+               // get the color pointed to by the eigen vector
+               c = get(col_x,col_y);
+               f = (k[x]);
+               // update gaussian sum
+               sumr += f*c.r;
+               sumg += f*c.g;
+               sumb += f*c.b;
+
+               // update vector
+               vec = tensor.get(col_x,col_y);
+               vec_y = vec.r/127.5 -1;
+               vec_x = vec.g/127.5 -1;
+            }
+
+            // negative half
+            col_x = i;
+            col_y = j;
+            for(int x = half; x>=0; x--){
+               // get the coordinates of the pixel pointed to by the negative eigen vec
+               col_x -= vec_x>0? vec_x/vec_x : 0; // move left 1 or 0
+               col_y -=  vec_x>0? vec_y/vec_x : vec_y>0?1:0; // move up/down from eigen vec
+
+               // check bound of pixel asking for
+               col_x = (col_x>=0 & col_x<width())?col_x:i;
+               col_y = (col_y>=0 & col_y<height())?col_y:j;
+
+               // get the color pointed to by the eigen vector
+               c = get(col_x,col_y);
+               f = (k[x]);
+               // update gaussian sum
+               sumr += f*c.r;
+               sumg += f*c.g;
+               sumb += f*c.b;
+
+               // update vector, get the vector at the new coord for next calculation
+               vec = tensor.get(col_x,col_y);
+               vec_y = vec.r/127.5 -1;
+               vec_x = vec.g/127.5 -1;
+            }
+ 
+            sumr = sumr/frac;
+            sumg = sumg/frac;
+            sumb = sumb/frac;
+            sumr = sumr>255?255:sumr;
+            sumg = sumg>255?255:sumg;
+            sumb = sumb>255?255:sumb;
+            result.set(i,j,Pixel{sumr,sumg,sumb});
+         }
+      }
+
+      return result;
+
+  }
    
 Image Image::threshold(float k, float phi) const{
    Image result(w, h);
@@ -1025,7 +1176,7 @@ Image Image::invert() const {
 
 Image Image::cquant() const {
    Image result(w, h);
-   float d = 81;
+   float d = 51;
    for(int i = 0; i < h; i++){
       for(int j = 0; j < w; j++){
          struct Pixel from = get(i,j);

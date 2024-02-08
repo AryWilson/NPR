@@ -7,95 +7,158 @@ int main(int argc, char** argv)
 {
 
    Image cat;
-   if (!cat.load("../source_images/cow.png")) {
+   if (!cat.load("../source_images/still3.png")) {
       // if (!hatch.load("../source_images/still3.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
 
-   Image pastel;
-   if (!pastel.load("../texture/pastel_back.png")) {
+   // Image pastel;
+   // if (!pastel.load("../texture/pencil_mark.png")) {
+   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
+   //    exit(0);
+   // }
+
+   Image center;
+   if (!center.load("../build/center.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
 
-   // Image lines = cat.sobel();
+   center = cat.tensor();
+   center.save("center.png");
+   // return 0;
+
+   cat = cat.dirrected_gaussian(3.4,center);
+   cat.save("center2.png");
+   return 0;
+   cat = cat.gaussian(1.4);
+   Image white = cat;
+   white.fill(Pixel{255,255,255});
+   
+   int x,y,i,j;
+   Pixel to_set = Pixel{255,0,0};
+   for(int a = 0;a<cat.height();a+=5){      
+      for(int b = 0;b<cat.width();b+=5){
+         i = a;
+         j = b;
+         to_set = cat.get(i,j);
+         for (int n = 0;n<30;n++){
+            Pixel p = center.get(i,j);
+            x = p.r>0?1:0;
+            y = p.b<100?(p.g>0?1:0):(p.g>0?-1:0);
+            i = i+x;
+            j = j+y;
+            white.set(i,j,to_set);
+         }
+      }
+   }
+   
+   white.save("center2.png");
+
+   // cat = cat.gaussian(1.4);
+   // cat.save("center1.png");
+   // cat = cat.vfc();
+   // cat.save("center2.png");
+
+   return 0 ;
+
+   // Image lines = cat.sobel().invert();
+   // Image detail = cat.vingette();
+   // cat = cat.lightest();
    // lines = cat.darkest(lines);
    // Image p = cat.quantization(8).crand();
    // cat = lines.lightest(p);
 
-   cat = cat.vingette();
-   cat.save("sobel_1.png");
-   return 0;
+   // // cat = cat.vingette();
+   // Image lines = cat.sobel().invert();
+   // // lines = cat.darkest(lines).crand();
+   // Image detail = cat.cquant();
+   // Image blur = detail.crand();
 
-   Image hi = cat.cquant().crand().lightest(cat.toTile(pastel).invert());
-   cat = cat.alphaBlend(hi,.5);
+   // Image white = cat;
+   // white.fill(Pixel{255,255,255});
+   // Image center = white.vingette();
+   // Image big_center = center.subimage(.1*center.width(),.1*center.height(),.8*center.width(),.8*center.height()).resize(center.width(),center.height());
+   // big_center = big_center.add(big_center).gaussian(3.5);
+   // big_center.save("center.png");
+   // Image edge = center.invert();
+   // detail = detail.darkest(lines).add(edge);//detail with small white edges
+   // // blur.save("sobel_1.png");
+   // // detail.save("sobel_2.png");
+   // blur.add(detail).save("sobel.png");
 
-   cat.save("test.png");
+
+   // return 0;
+
+   // Image hi = cat.cquant().crand().lightest(cat.toTile(pastel).invert());
+   // cat = cat.alphaBlend(hi,.5);
+
+   // cat.save("test.png");
 
 
    
-   return 0;
+   // return 0;
 
 
-   //load in image
-   Image hatch;
-   if (!hatch.load("../texture/pencil1.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
-      exit(0);
-   }
-   Image hatch1;
-   if (!hatch1.load("../texture/pencil2.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
-      exit(0);
-   }
-   // cat.tensor().save("tensor.png");
+   // //load in image
+   // Image hatch;
+   // if (!hatch.load("../texture/pencil1.png")) {
+   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
+   //    exit(0);
+   // }
+   // Image hatch1;
+   // if (!hatch1.load("../texture/pencil2.png")) {
+   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
+   //    exit(0);
+   // }
+   // // cat.tensor().save("tensor.png");
 
    
 
-   // cat = cat.cquant();
-   // cat = cat.crand().alphaBlend(cat,.4);
-   // cat.save("cowpaint.png");
+   // // cat = cat.cquant();
+   // // cat = cat.crand().alphaBlend(cat,.4);
+   // // cat.save("cowpaint.png");
 
-   //one
-   hatch1 = hatch1.resize(200,200);
-   hatch = hatch.resize(200,200);
-   Image white = cat;
-   white.fill(Pixel{30,30,30});
-   // cat = cat.grayscale().cquant();
-   // Image cat1 = cat.subtract(white);
-   // cat = cat.add(white);
-   // cat1 = cat1.crosshatch(hatch1);
+   // //one
+   // hatch1 = hatch1.resize(200,200);
+   // hatch = hatch.resize(200,200);
+   // Image white_ = cat;
+   // white_.fill(Pixel{30,30,30});
+   // // cat = cat.grayscale().cquant();
+   // // Image cat1 = cat.subtract(white);
+   // // cat = cat.add(white);
+   // // cat1 = cat1.crosshatch(hatch1);
+   // // cat = cat.crosshatch(hatch);
+   // // cat.darkest(cat1).save("crosshatch.png");
+
+   // //two
+   // Image cat1 = cat.subtract(white).crosshatch(hatch1);
    // cat = cat.crosshatch(hatch);
-   // cat.darkest(cat1).save("crosshatch.png");
-
-   //two
-   Image cat1 = cat.subtract(white).crosshatch(hatch1);
-   cat = cat.crosshatch(hatch);
-   cat.darkest(cat1).save("crosshatchpng1.png");
+   // cat.darkest(cat1).save("crosshatchpng1.png");
 
 
-   return 0;
+   // return 0;
    
 
-   // grayscale
-   cat = cat.grayscale();
-   // gaussians .5
-   float k = 1.4;
-   Image cat_5 = cat.gaussian(k);
-   // gaussians 2.0
-   Image cat2 = cat.gaussian(1.6*k);
-   // dog
-   // cat = cat2.subtract(cat_5);
-   // cat.save("dog1.png");
+   // // grayscale
+   // cat = cat.grayscale();
+   // // gaussians .5
+   // float k = 1.4;
+   // Image cat_5 = cat.gaussian(k);
+   // // gaussians 2.0
+   // Image cat2 = cat.gaussian(1.6*k);
+   // // dog
+   // // cat = cat2.subtract(cat_5);
+   // // cat.save("dog1.png");
 
    
-   cat = cat2.dog(cat_5,5.0f);
-   cat.save("dog5.png");
+   // cat = cat2.dog(cat_5,5.0f);
+   // cat.save("dog5.png");
    
-   // threshold
-   cat = cat.threshold(200,0.02f);
-   cat.save("threshold200_1.png");
+   // // threshold
+   // cat = cat.threshold(200,0.02f);
+   // cat.save("threshold200_1.png");
 
    // // Image tile;
    // // if (!tile.load("../texture/pencil1.png")) {
