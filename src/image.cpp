@@ -1007,15 +1007,15 @@ Image Image::vfc() const{
             // positive half
             Pixel vec = tensor.get(i,j);
             // get the y component of the first eigen vector
-            float vec_y = vec.r/127.5 -1 ; // TBD: depending on construction i think this may have a detrimentally smaller range [0,255] vs [-255,255] of y... 
+            float vec_x = vec.r/127.5 -1 ; // TBD: depending on construction i think this may have a detrimentally smaller range [0,255] vs [-255,255] of y... 
             // go to location within kernel specified by vector so loop through gaussian vector not kernel
-            float vec_x = vec.g/127.5 -1;
+            float vec_y = vec.g/127.5 -1;
             int col_x = i;
             int col_y = j;
             for(int x = half; x<size; x++){
                // get the coordinates of the pixel pointed to by the eigen vec
-               col_x += vec_x>0? vec_x/vec_x : 0; // move right 1 or 0
-               col_y +=  vec_x>0? vec_y/vec_x : vec_y>0?1:0; // move up/down from eigen vec
+               col_x += vec_x; // move right 1 or 0
+               col_y +=  vec_y; // move up/down from eigen vec
 
                // check bound of pixel asking for
                col_x = (col_x>=0 & col_x<width())?col_x:i;
@@ -1031,8 +1031,8 @@ Image Image::vfc() const{
 
                // update vector
                vec = tensor.get(col_x,col_y);
-               vec_y = vec.r/127.5 -1;
-               vec_x = vec.g/127.5 -1;
+               vec_x = vec.r/127.5 -1;
+               vec_y = vec.g/127.5 -1;
             }
 
             // negative half
@@ -1040,8 +1040,8 @@ Image Image::vfc() const{
             col_y = j;
             for(int x = half; x>=0; x--){
                // get the coordinates of the pixel pointed to by the negative eigen vec
-               col_x -= vec_x>0? vec_x/vec_x : 0; // move left 1 or 0
-               col_y -=  vec_x>0? vec_y/vec_x : vec_y>0?1:0; // move up/down from eigen vec
+               col_x -= vec_x; 
+               col_y -=  vec_y; // move up/down from eigen vec
 
                // check bound of pixel asking for
                col_x = (col_x>=0 & col_x<width())?col_x:i;
@@ -1057,8 +1057,8 @@ Image Image::vfc() const{
 
                // update vector, get the vector at the new coord for next calculation
                vec = tensor.get(col_x,col_y);
-               vec_y = vec.r/127.5 -1;
-               vec_x = vec.g/127.5 -1;
+               vec_x = vec.r/127.5 -1;
+               vec_y = vec.g/127.5 -1;
             }
  
             sumr = sumr/frac;
