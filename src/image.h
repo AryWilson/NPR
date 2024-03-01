@@ -8,6 +8,7 @@
 #include <vector>
 #include <set>
 #include <cmath>
+#include <array>
 
 
 namespace agl {
@@ -150,6 +151,9 @@ class Image {
   // Clamps the image if it doesn't fit on this image
   void replace(const Image& image, int x, int y);
 
+  void brush(Image virt, int startx, int starty, Pixel xym, Pixel col);
+  Image rotate(Pixel xym);
+
   // swirl the colors 
   Image swirl() const;
 
@@ -199,6 +203,11 @@ class Image {
 
   // makes the image more vibrant by the specified ammount
   Image saturate(unsigned char ammount) const;
+
+  //give edge-aligned and blurred tensor of an image
+  // cahnge tempurature based on eigen vector
+  Image tempurature(unsigned char ammount,unsigned char cutoff, Image tensor) const;
+
   // makes the darkest values darker and the lightest values lighter
   Image contrast(unsigned char ammount, unsigned char cutoff) const;
 
@@ -213,13 +222,14 @@ class Image {
   Image sobel()const; 
 
   // Sobel Edge Detector and vector flow build from tensor
-  Image tensor()const; 
+  // edge align boolean 
+  Image tensor(bool edge_aligned)const; 
 
   // vector flow build from tensor (not working)
   Image vfc()const; 
 
 
-  Image vectorgraph()const;  
+  // Image vectorgraph()const;  
 
   // box blur
   Image blur() const;
@@ -229,7 +239,10 @@ class Image {
 
   // Gaussian blur
   Image gaussian(float sigma) const;
+  //here we want edge aligned = true on tensor
   Image dirrected_gaussian(float sigma,Image tensor) const;
+  //here we want edge aligned = false on tensor
+  Image dirrected_gaussian_1(float sigma,Image tensor) const;
 
 
   // subtract given image from image, scaled by tau
@@ -252,6 +265,10 @@ class Image {
   // Assumes that the two images are the same size
   Image alphaBlend(const Image& other, float amount) const;
 
+  // if mask pixel is white, other will show up, if black, input image
+  Image alphaBlend(const Image& other, const Image& other_mask) const;
+
+
   // Convert the image to grayscale
   Image invert() const;
 
@@ -259,6 +276,7 @@ class Image {
   Image grayscale() const;
 
   Image toTile(const Image& tile) const;
+  Image toTile_test(const Image& tile,const Image& tensor) const;
 
   // return a bitmap version of this image
   Image colorJitter(int size) const;
@@ -269,11 +287,17 @@ class Image {
   // Fill this image with a color
   void fill(const Pixel& c);
 
-    // very rough color quantization
-  Image cquant() const;
+  // very rough color quantization options 0-5 for color range
+  Image cquant(unsigned char i) const;
 
   // kernel color randomization
   Image crand() const;
+  // color randomization +=
+  Image rnoise(unsigned char max) const;
+
+  // return summary statistics
+  // std::vector<float> sumarize();
+  std::array<int, 255> sumarize();
 
  private:
   int w,h,ch = 0;
