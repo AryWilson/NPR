@@ -151,6 +151,12 @@ class Image {
   // Clamps the image if it doesn't fit on this image
   void replace(const Image& image, int x, int y);
 
+  // expects brush image (virt) is virtically aligned
+  // applies the given brush white background, black ink to the image
+  // virt is brush image
+  // startx and starty are the starting indexes (where in the image to start drawing) 
+  // xym is the tensor pixel, dirrection of least change (guides rotation)
+  // col is the color of the brush (usually the color of that pixel)
   void brush(Image virt, int startx, int starty, Pixel xym, Pixel col);
   Image rotate(Pixel xym);
 
@@ -298,6 +304,13 @@ class Image {
   // return summary statistics
   // std::vector<float> sumarize();
   std::array<int, 255> sumarize();
+  Image normalize();
+
+  // for stroke-based sort tensor by magnitude
+  // expects brush image is virtically aligned
+  // depends on brush fn
+  Image paint(const Image& fbrush);
+
 
  private:
   int w,h,ch = 0;

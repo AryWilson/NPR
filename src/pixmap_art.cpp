@@ -3,29 +3,101 @@
 using namespace std;
 using namespace agl;
 
+
+
 int main(int argc, char** argv)
 {
    srand(time(0));
    Image still;
-   if (!still.load("../source_images/still3.png")) {
+   if (!still.load("../source_images/man.png")) {
       // if (!hatch.load("../source_images/party.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
 
-// get tensor for directional strokes
-// quantize for color selection???
-// get stroke texture
-// scale stroke texture
-//
-still = still.rotate(Pixel{0,0,255});
-still.save("../src/r.png");
-return 0;
+   
+   Image brush;
+   if (!brush.load("../texture/brush.png")) {
+      // if (!hatch.load("../source_images/party.png")) {
+      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      exit(0);
+   }
+   brush = brush.rotate90();
+   string names[] = {"bat","bench","cityscape","cloud","fam1","house","hut","kid","lottie","man","orangutan","party","sea1","shell","still3","still1","texture"};
+   ostringstream oss;
+   oss << "../src/" << names[0] <<".png";
+   string name = oss.str();
+   still.paint(brush).save("../src/manpaint1.png");
+   return 0;
+   // brush = brush.rotate90();
+   // brush.rotate(Pixel{10+127,127,0}).flipHorizontal().save("../src/r2.png");
+   // still.normalize().save("../src/r1.png");
+   // return 0;
+   // // brush.rotate90().rotate(Pixel{1,0,0}).save("r2.png");
+   // // still.tensor(true).blur().save("r3.png");
+   // Image t = still.tensor(true).blur();
+   // for(int i = 0; i<still.height(); i+=10){
+   //    for(int j = 0; j<still.width(); j+=10){
+   //       float x = j;
+   //       float y = i;
+   //       for(int n = 0;n<20;n++){
+   //          int m = t.get(y,x).b;
+   //          if(m<=10){break;}
+   //          still.set(y,x,Pixel{0,255,0});
+   //          x+=((t.get(y,x).r)-127.5f)/m;
+   //          y+=((t.get(y,x).g)-127.5f)/m;
+   //       }
+   //    }
+   // }
+   // still.save("../src/a.png");
+   // return 0;
 
+// get tensor for directional strokes
+still = still.resize(still.width()/2,still.height()/2);
+brush = brush.resize(still.width()/25,still.height()/25);
+// Image t1 = still.gaussian(1.5).tensor(true).gaussian(1);
+Image t1 = still.tensor(true).gaussian(1);
+// Image t2 = still.tensor(false).blur();
+// quantize for color selection???
+// still = still.cquant(1);
+// scale stroke texture
+Image still_c = still;
+still = still.cquant(4).blur();
+// still.fill(Pixel{250,250,250});
+// still_c.fill(Pixel{0,250,250});
+for(int i = 0; i<still.height(); i+=1){
+   for(int j = 0; j<still.width(); j+=1){
+      // if(t1.get(i,j).b>0){}
+   
+      int temp_x = (t1.get(i,j).b)/51.0f;
+      int wx = brush.width();
+      still.brush(brush.resize((wx)*(temp_x),brush.height()).subimage((((wx)*(temp_x))/2.0f - wx/2.0f),0,brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), still_c.get(i,j));
+      
+      // if(t1.get(i,j).b>120){
+
+      //    still.brush(brush.resize(brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), still_c.get(i,j));
+      // }
+      
+   }
+}
+//bat,bench,cityscape,cloud,fam1,house,hut,kdi,lottie,man,orangutan,party,sea1,shell,still3,still1,texture
+// still = still.rotate(Pixel{0,0,255});
+// still.save("../src/r.png");
+// still = still.resize(still.width()/4,still.height()/4);
+// still = still.grayscale().normalize();
+still.save("../src/manpaint1.png");
+return 0;
+// abstract back (thick lines, all magnitudes)
+//// ordering based on magnitude?? done with parrallel?
+//// sort image?? Pixel{x,y,m}, sort ascending based on m, then loop through
+//// apply kuwahara &&|| thresholding to tensor
+
+// detailed (lines that follow curve, largest magnitudes, alpha blend with image)
+// lineart
 
 // walkway sturgeon still1 sea1 orangutan lottie house fam1 bench kid
 /* CHARCOAL & WATERCOLOR
-   still = still.resize(still.width()/4,still.height()/4);
+   // still = still.resize(still.width()/4,still.height()/4);
    float s_ = min(still.width(),still.height())/150.0f;
    float sigma = s_;
    float k = 1.3;
@@ -47,15 +119,15 @@ return 0;
    // return 0;
    Image charcoal = ((grey.dirrected_gaussian_1(sigma,t)).dog(grey.dirrected_gaussian_1(sigma*k,t),tau)).dirrected_gaussian(2,t1).threshold(cutoff,.01);//
 
-   charcoal.save("v1.png");//.rnoise(1)
+   charcoal.save("../src/r1.png");//.rnoise(1)
 
    // Image watercolor = ((grey.dirrected_gaussian_1(s_*.1,t)).subtract(grey.dirrected_gaussian_1(s_*1.5,t))).threshold(cutoff,.005).dirrected_gaussian(1,t1);// use cquant and rnoise
    // lines.save("v1.png");
    // return 0;
 
-   return 0;*/
-
-/* CROSSHATCH*/
+   return 0;
+*/
+/* CROSSHATCH
 
    Image pannel;
    if (!pannel.load("../texture/ink1.png")) {
@@ -119,7 +191,7 @@ return 0;
    
    pannel.darkest(black).darkest(lines).save("fin.png");
    return 0;
-
+*/
 
 /* LIGHT EDGE... yikes
 // binary threshold of a photo

@@ -8,6 +8,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 #include <vector>
+#include <algorithm>
 #include <cmath>
 
 namespace agl {
@@ -213,11 +214,11 @@ Image Image::resize(int width, int height) const {
 
 Image Image::flipHorizontal() const {
    Image result(w, h);
-   for(int i = 0; i < round(h/2.0f + 0.5f) ; i++){
-      for(int j = 0; j < w; j++){
-         struct Pixel swap = get((w-1)-i,j);
-         result.set((w-1)-i,j, get(i,j));
-         result.set(i,j,swap);
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j < round(w/2.0f + 0.5f); j++){
+         struct Pixel swap = get(i,j);
+         result.set(i,j, get(i,(w-1)-j));
+         result.set(i,(w-1)-j,swap);
       }
    }
 
@@ -226,7 +227,15 @@ Image Image::flipHorizontal() const {
 }
 
 Image Image::flipVertical() const {
-   Image result(0, 0);
+   Image result(w, h);
+   for(int i = 0; i < round(h/2.0f + 0.5f) ; i++){
+      for(int j = 0; j < w; j++){
+         struct Pixel swap = get((h-1)-i,j);
+         result.set((h-1)-i,j, get(i,j));
+         result.set(i,j,swap);
+      }
+   }
+
    return result;
 }
 
@@ -238,7 +247,7 @@ Image Image::rotate90() const {
       for(int j = 0; j<w; j++){
          rgb = get(i,j);
 
-         result.set(j,i,rgb);
+         result.set(j,h-i-1,rgb);
       }
    }
    return result;
@@ -251,7 +260,7 @@ Image Image::subimage(int startx, int starty, int width, int height) const {
          if ((_i < h) && (_j < w) && (_i >= 0) && (_j >= 0)){
             sub.set(i,j,get(_i,_j));
          } else {
-            sub.set(i,j,Pixel{0,0,0});
+            sub.set(i,j,Pixel{255,255,255});
          }
       }
    }
@@ -277,20 +286,20 @@ void Image::brush(Image virt, int startx, int starty, Pixel xym, Pixel col) {
    
    if(_data == nullptr || virt.data() == nullptr){return;}
    // resize based on image size and magnitude
-   int s = std::min(w,h);
-   virt = virt.resize(s/20.0f,(s/20.0f)*(xym.b/127.5f));
+   // int s = std::min(w,h);
+   // virt = virt.resize(s/20.0f,(s/20.0f)*(xym.b/127.5f));
    // find angle from xym
    // rotate arround angle
-   virt = virt.rotate(xym);
+   virt = virt.rotate(xym).flipHorizontal();
    
 
    int width = virt.width();
    int height = virt.height();
-   
+
    for(int _i = startx, i = 0; _i < h && i < height; _i++, i++){
       for(int _j = starty, j = 0; _j < w && j < width; _j++, j++){
-         Pixel c = get(i,j);
-         if(c.r != 255 || c.g != 255 || c.b != 255){
+         Pixel c = virt.get(i,j);
+         if(c.r < 230 || c.g < 230 || c.b < 230){
             set(_i,_j,col);
          }
       }
@@ -303,10 +312,12 @@ void Image::brush(Image virt, int startx, int starty, Pixel xym, Pixel col) {
 Image Image::rotate(Pixel xym){
    Image result(w, h);
    int x,y;
-   float denom = std::max(xym.r,xym.g);
+   float xdir = (xym.r-127.5f);
+   float ydir = (xym.g-127.5f);
+   float denom = std::max(abs(xdir),abs(ydir));
    if (denom<=0){return *this;}
-   float xdir = (xym.r/denom);
-   float ydir = (xym.g/denom);
+   xdir = ((xdir)/denom);
+   ydir = ((ydir)/denom);
    for(int i = 0; i < h; i++){
       for(int j = 0; j < w; j++){
          x = (j-w/2)*(xdir) - (i-h/2)*(ydir) + h/2;
@@ -1053,7 +1064,7 @@ Image Image::tensor(bool edge_aligned = false) const {
             float mag2 = sqrt(pow(t2[0],2) + pow(t2[1],2));
             t2[0] = (((t2[0]/mag2) + 1)/2.0)*255;
             t2[1] = (((t2[1]/mag2) + 1)/2.0)*255;
-            result.set(i,j,Pixel{t2[0], t2[1], a});
+            result.set(i,j,Pixel{t2[0], t2[1], mag2});
          }
          
          
@@ -1331,6 +1342,56 @@ Image Image::gaussian(float sigma) const{
             result.set(i,j,Pixel{sumr,sumg,sumb});
          }
       }
+
+      // for(int i = 0; i < h; i++){
+      //    for(int j = 0; j < w; j++){ 
+      //       sumr = 0;
+      //       sumg = 0;
+      //       sumb = 0;
+      //       // get the tensor color
+      //       Pixel vec = tensor.get(i,j);
+      //       // get the x,y components of the first eigen vector
+      //       float vec_x = vec.r/127.5 -1;
+      //       float vec_y = vec.g/127.5 -1;
+      //       int col_x = j;
+      //       int col_y = i;
+      //       unsigned char cutoff = 20;
+      //       // go to location within kernel specified by vector so loop through gaussian vector not kernel
+      //       // loop through 1d verticle
+      //       for(int x = -1*half, idx = 0; x<= half; x++, idx++){
+      //          // get the coordinates of the pixel pointed to by the eigen vec
+      //          if(vec.b>cutoff){
+      //             col_x = j + ((float)x)*vec_x; // move right some
+      //             col_y = i + ((float)x)*vec_y; // move up/down from eigen vec
+      //          }
+               
+      //          // check bound of pixel asking for
+      //          col_x = (col_x>=0 & col_x<width())?col_x:j;
+      //          col_y = (col_y>=0 & col_y<height())?col_y:i;
+      //          float f = k[idx];
+      //          Pixel c = result.get(col_y,col_x);
+      //          sumr += f*c.r;
+      //          sumg += f*c.g;
+      //          sumb += f*c.b;
+
+      //          // updte tensor and vectors
+      //          vec = tensor.get(col_y,col_x);
+      //          // get the x,y components of the first eigen vector
+      //          vec_x = vec.r/127.5 -1;
+      //          vec_y = vec.g/127.5 -1;
+
+      //       }
+      //       sumr = sumr/frac;
+      //       sumg = sumg/frac;
+      //       sumb = sumb/frac;
+
+      //       sumr = sumr>255?255:sumr;
+      //       sumg = sumg>255?255:sumg;
+      //       sumb = sumb>255?255:sumb;
+      //       result.set(i,j,Pixel{sumr,sumg,sumb});
+      //    }
+      // }
+
       return result;
 
 /*
@@ -1888,6 +1949,7 @@ Image Image::colorJitter(int size) const {
 //    return sum;
 // }
 
+// normalize
 std::array<int, 255> Image::sumarize() {
    std::array<int, 255> sum= {};
    for(int i=0; i<h; i++){
@@ -1895,14 +1957,48 @@ std::array<int, 255> Image::sumarize() {
          sum[get(i,j).r]+=1;
       }
    }
+   return sum;
+}
+
+Image Image::normalize() {
+   unsigned char bins = 255;
+   unsigned char min = 0;
+   Image result = Image(w, h);
+   std::array<int, 256> pdf= {};
+   std::array<long, 256> cdf= {};
+   for(int i=0; i<256; i++){
+      pdf[i]=0;
+      cdf[i]=0;
+   }
 
    for(int i=0; i<h; i++){
-      for(int j=0; i<w; j++){
-         sum[get(i,j).r]/w*h;
+      for(int j=0; j<w; j++){
+         pdf[get(i,j).r%255]+=1;
       }
    }
 
-   return sum;
+   int sum = 0;
+   bool toset = true;
+   for(int i=0; i<256; i++){
+      sum += pdf[i];
+      if (toset && sum>0){
+         toset = false;
+         min = i;
+      }
+      cdf[i] = sum;
+   }
+   cdf[255] = w*h;
+
+   for(int i=0; i<h; i++){
+      for(int j=0; j<w; j++){
+         int r = round((cdf[get(i,j).r%256]-min)*(bins+1)/(w*h-min));
+         if(r>255){r = 255;}
+         if(r<0){r = 0;}
+         result.set(i,j,Pixel{r,r,r});
+      }
+   }
+
+   return result;
 }
 
 Image Image::bitmap(int size) const {
@@ -1919,6 +2015,67 @@ void Image::fill(const Pixel& c) {
    }
 }
 
+
+struct Test{
+   int x;
+   int y;
+   unsigned char m;
+   bool operator() (const Test& a, const Test& b) {
+      return ( a.m < b.m);
+   };
+}test;
+
+/**/
+Image Image::paint(const Image& fbrush) {
+   Image result = Image(w,h);
+   Image brush = fbrush;
+   // SORT TENSOR
+   // sort an image (by tensor magnitude)
+   // used by qsort to sort an array
+   
+   std::vector<Test> tens;
+
+   for(int i = 0; i<h; i+=1){
+      for(int j = 0; j<w; j+=1){
+         tens.push_back(Test{j,i,get(i,j).b});
+      }
+   }
+
+   // tens is sorted pixel vector for layering purposes...
+   std::sort(tens.begin(), tens.end(), test);
+
+   //APPLY PAINT
+   // scale stroke texture
+   brush = brush.resize(w/25,h/25);
+   // get tensor for dirrected paint
+   Image t1 = gaussian(1.5).tensor(true).gaussian(1);
+   // Image t1 = gaussian(1.5).tensor(true).gaussian(1);
+
+   /* with sorting*/
+   for(Test xym : tens){
+      int i = xym.y;
+      int j = xym.x;
+      // if(t1.get(i,j).b>50){}
+         int temp_x = (t1.get(i,j).b)/51.0f;
+         int wx = brush.width();
+         result.brush(brush.resize((wx)*(temp_x),brush.height()).subimage((((wx)*(temp_x))/2.0f - wx/2.0f),0,brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), get(i,j));
+      
+   }
+         
+   /* without sorting
+   for(int i = 0; i<h; i+=1){
+      for(int j = 0; j<w; j+=1){
+         if(t1.get(i,j).b>50){
+      
+         int temp_x = (t1.get(i,j).b)/51.0f;
+         int wx = brush.width();
+         result.brush(brush.resize((wx)*(temp_x),brush.height()).subimage((((wx)*(temp_x))/2.0f - wx/2.0f),0,brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), get(i,j));
+         }
+      }
+   }*/
+
+   return result;
+}
 
 
 }  // namespace agl
