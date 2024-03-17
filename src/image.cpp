@@ -255,8 +255,8 @@ Image Image::rotate90() const {
 
 Image Image::subimage(int startx, int starty, int width, int height) const {
    Image sub(width, height);
-   for(int _i = startx, i = 0; _i < startx+sub.height(); _i++, i++){
-      for(int _j = starty, j = 0; _j < starty+sub.width(); _j++, j++){
+   for(int _i = starty, i = 0; _i < starty+sub.height(); _i++, i++){
+      for(int _j = startx, j = 0; _j < startx+sub.width(); _j++, j++){
          if ((_i < h) && (_j < w) && (_i >= 0) && (_j >= 0)){
             sub.set(i,j,get(_i,_j));
          } else {
@@ -272,8 +272,8 @@ void Image::replace(const Image& image, int startx, int starty) {
    int height = image.height();
    if(_data == nullptr || image.data() == nullptr){return;}
 
-   for(int _i = startx, i = 0; _i < h && i < height; _i++, i++){
-      for(int _j = starty, j = 0; _j < w && j < width; _j++, j++){
+   for(int _i = starty, i = 0; _i < h && i < height; _i++, i++){
+      for(int _j = startx, j = 0; _j < w && j < width; _j++, j++){
          set(_i,_j,image.get(i,j));
       }
    }
@@ -2015,19 +2015,31 @@ void Image::fill(const Pixel& c) {
    }
 }
 
-
+Image Image::mask(){
+   Image result = Image(w,h); 
+   for(int i = 0; i < h; i++){
+      for(int j = 0; j < w; j++){
+         unsigned char c = get(i,j).b;
+         result.set(i,j,Pixel{c,c,c});
+      }
+   }
+   return result;
+}
 struct Test{
    int x;
    int y;
    unsigned char m;
    bool operator() (const Test& a, const Test& b) {
-      return ( a.m < b.m);
+      return ( a.m > b.m);
    };
 }test;
 
 /**/
-Image Image::paint(const Image& fbrush) {
-   Image result = Image(w,h);
+Image Image::paint(const Image& fbrush, unsigned char cutoff, float weight) {
+   // Image result = cquant(5).crand().gaussian(1).rnoise(2);
+
+   Image result = Image{w,h};
+   result.fill(Pixel{255,255,255});
    Image brush = fbrush;
    // SORT TENSOR
    // sort an image (by tensor magnitude)
@@ -2046,34 +2058,49 @@ Image Image::paint(const Image& fbrush) {
 
    //APPLY PAINT
    // scale stroke texture
-   brush = brush.resize(w/25,h/25);
+   brush = brush.resize((w/25)*weight,(h/25)*weight);
    // get tensor for dirrected paint
-   Image t1 = gaussian(1.5).tensor(true).gaussian(1);
+   Image t1 = tensor(true).blur();
    // Image t1 = gaussian(1.5).tensor(true).gaussian(1);
 
    /* with sorting*/
    for(Test xym : tens){
       int i = xym.y;
       int j = xym.x;
-      // if(t1.get(i,j).b>50){}
-         int temp_x = (t1.get(i,j).b)/51.0f;
-         int wx = brush.width();
-         result.brush(brush.resize((wx)*(temp_x),brush.height()).subimage((((wx)*(temp_x))/2.0f - wx/2.0f),0,brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), get(i,j));
-      
-   }
-         
-   /* without sorting
-   for(int i = 0; i<h; i+=1){
-      for(int j = 0; j<w; j+=1){
-         if(t1.get(i,j).b>50){
-      
-         int temp_x = (t1.get(i,j).b)/51.0f;
-         int wx = brush.width();
-         result.brush(brush.resize((wx)*(temp_x),brush.height()).subimage((((wx)*(temp_x))/2.0f - wx/2.0f),0,brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), get(i,j));
+      Pixel col = result.get(i,j);
+      float n = 2;
+      float scale = 0.4*weight + 0.55;
+      if(scale>.99){scale=.99;}
+      if(scale<.5){scale=.5;}
+
+      if(t1.get(i,j).b>=cutoff && col.r==255 && col.g==255 && col.b==255){
+         if(t1.get(i,j).b > 0){
+            float temp_x = 1 - scale*((t1.get(i,j).b)/255.0f);
+            Image b = brush.resize(brush.width()*temp_x,brush.height()*temp_x);
+            int wx = b.width();
+            temp_x = temp_x*n;
+
+            result.brush(b.resize((wx)*temp_x,b.height()).subimage((((wx)*temp_x)/2.0f - wx/2.0f),0,wx,b.height()), i-b.height()/2,j-wx/2, t1.get(i,j), get(i,j));
+
+         } else {
+            float temp_x = 2;
+            Image b = brush;
+            int wx = b.width();
+            temp_x = temp_x*n;
+            result.brush(b.resize((wx)*temp_x,b.height()).subimage((((wx)*temp_x)/2.0f - wx/2.0f),0,wx,b.height()), i-b.height()/2,j-wx/2, t1.get(i,j), get(i,j));
          }
       }
-   }*/
+   }
 
+   // remove white background
+   for(int i = 0; i<h; i+=1){
+      for(int j = 0; j<w; j+=1){
+         Pixel col = result.get(i,j);
+         if(col.r==255 && col.g==255 && col.b==255){
+            result.set(i,j,get(i,j));
+         }
+      }
+   }
    return result;
 }
 

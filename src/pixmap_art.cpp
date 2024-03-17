@@ -9,25 +9,71 @@ int main(int argc, char** argv)
 {
    srand(time(0));
    Image still;
-   if (!still.load("../source_images/man.png")) {
-      // if (!hatch.load("../source_images/party.png")) {
+   if (!still.load("../source_images/sturgeon.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
+   Image still1;
+   if (!still1.load("../src/sturgeonpaint4.png")) {
+      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      exit(0);
+   }
+   // still1.dirrected_gaussian(1.5,still.resize((still.width()/(float)still.height())*(900),900).tensor(true)).blur().save("../src/123.png");
 
+   // return 0;
    
    Image brush;
    if (!brush.load("../texture/brush.png")) {
-      // if (!hatch.load("../source_images/party.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
    brush = brush.rotate90();
-   string names[] = {"bat","bench","cityscape","cloud","fam1","house","hut","kid","lottie","man","orangutan","party","sea1","shell","still3","still1","texture"};
-   ostringstream oss;
-   oss << "../src/" << names[0] <<".png";
-   string name = oss.str();
-   still.paint(brush).save("../src/manpaint1.png");
+   Image brush_thin;
+   if (!brush_thin.load("../texture/pencil_line.png")) {
+      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      exit(0);
+   }
+   
+   // still.grayscale().normalize().blur().tensor(true).mask().threshold(40,.1).save("../src/mask1.png");
+   // brush = brush.rotate90();
+
+
+/* PAINTERLY
+
+   still = still.paint(brush,1,1);
+   still = still.paint(brush,100,.5);
+   still.save("../src/testing1.png");
+   return 0;*/
+/* PAINTERLY1
+   // Image edge_aligned = still.tensor(true);
+   // still = still.resize((still.width()/(float)still.height())*(1000),1000);
+   Image still_detail = still;
+
+   Image mask = still.grayscale().normalize().blur().tensor(true).mask().threshold(40,.1);
+   still = still.paint(brush,1,1);
+   still_detail = still_detail.paint(brush,100,.5);
+   still.alphaBlend(still_detail,mask).save("../src/testing1.png");
+   return 0;
+   */
+   
+   // string names[] = {"fam1","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","texture","party","cow"};
+   string names[] = {"party","cow","fam1","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","texture","orangutan"};//"sturgeon"
+   // small brush, multiple layers, low cutoff, high cutoff with smaller/thinner brush
+   // string peps[] = {"fam1","man","kid","lottie","orangutan","sturgeon"}; 
+   // larger brush, mid cutoff
+   // string land[] = {"party","cow","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","still3","texture","orangutan","lottie"};
+
+   int m = 900;
+   for(string n : names){
+      if (!still.load("../source_images/"+n+".png")) {
+         break;
+      }
+      if (max(still.width(),still.height())>m){
+         still = still.resize((still.width()/(float)still.height())*(m),m);
+      }
+      still.paint(brush_thin,0,.9).save("../src/"+n+"paint14.png");
+   }
+   
    return 0;
    // brush = brush.rotate90();
    // brush.rotate(Pixel{10+127,127,0}).flipHorizontal().save("../src/r2.png");

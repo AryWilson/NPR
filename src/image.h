@@ -309,7 +309,11 @@ class Image {
   // for stroke-based sort tensor by magnitude
   // expects brush image is virtically aligned
   // depends on brush fn
-  Image paint(const Image& fbrush);
+  // cutoff is how many pixels are brushed (0-every pixel, 255-none)
+  // base - for color selection/tensor generation, 
+  // *this is background image
+  Image paint(const Image& fbrush, unsigned char cutoff, float weight);
+  Image mask();
 
 
  private:
