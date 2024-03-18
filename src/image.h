@@ -305,6 +305,8 @@ class Image {
   // std::vector<float> sumarize();
   std::array<int, 255> sumarize();
   Image normalize();
+  Image cnormalize();
+
 
   // for stroke-based sort tensor by magnitude
   // expects brush image is virtically aligned
@@ -312,7 +314,7 @@ class Image {
   // cutoff is how many pixels are brushed (0-every pixel, 255-none)
   // base - for color selection/tensor generation, 
   // *this is background image
-  Image paint(const Image& fbrush, unsigned char cutoff, float weight);
+  Image paint(const Image& background,const Image& fbrush, unsigned char cutoff, float weight);
   Image mask();
 
 
@@ -323,4 +325,4 @@ class Image {
 
 };
 }  // namespace agl
-#endif  // AGL_IMAGE_H_
+#endif  // AGL_IMAGE_H_v

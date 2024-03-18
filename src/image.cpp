@@ -1126,7 +1126,7 @@ Image Image::gaussian(float sigma) const{
    //build 1d gaussian kernel
    std::vector<float> k;
    float frac = (sqrt(2*M_PI)*sigma);
-   int size = ceil(sigma*6);
+   int size = ceil(sigma*7);
    // if (size <3){size=3;} else if (size>20){size =20;}
    int half = floor(size/2);
 
@@ -1280,7 +1280,7 @@ Image Image::gaussian(float sigma) const{
    //build gaussian kernel
       std::vector<float> k;
       float frac = (sqrt(2*M_PI)*sigma);
-      int size = ceil(sigma*6);
+      int size = ceil(sigma*7);
       // if (size <3){size=3;} else if (size>20){size =20;}
       int half = floor(size/2);
 
@@ -1306,7 +1306,7 @@ Image Image::gaussian(float sigma) const{
             float vec_y = vec.g/127.5 -1;
             int col_x = j;
             int col_y = i;
-            unsigned char cutoff = 20;
+            unsigned char cutoff = 0;
             // go to location within kernel specified by vector so loop through gaussian vector not kernel
             // loop through 1d verticle
             for(int x = -1*half, idx = 0; x<= half; x++, idx++){
@@ -1511,7 +1511,7 @@ Image Image::gaussian(float sigma) const{
    //build gaussian kernel
       std::vector<float> k;
       float frac = (sqrt(2*M_PI)*sigma);
-      int size = ceil(sigma*6);
+      int size = ceil(sigma*7);
       // if (size <3){size=3;} else if (size>20){size =20;}
       int half = floor(size/2);
 
@@ -1537,7 +1537,7 @@ Image Image::gaussian(float sigma) const{
             float vec_y = vec.g/127.5 -1;
             int col_x = j;
             int col_y = i;
-            unsigned char cutoff = 20;
+            unsigned char cutoff = 0;
             // go to location within kernel specified by vector so loop through gaussian vector not kernel
             // loop through 1d verticle
             for(int x = -1*half, idx = 0; x<= half; x++, idx++){
@@ -2001,6 +2001,83 @@ Image Image::normalize() {
    return result;
 }
 
+
+Image Image::cnormalize() {
+   unsigned char bins = 255;
+   Image result = Image(w, h);
+   std::array<int, 256> pdfR= {};
+   std::array<int, 256> pdfG= {};
+   std::array<int, 256> pdfB= {};
+   std::array<long, 256> cdfR= {};
+   std::array<long, 256> cdfG= {};
+   std::array<long, 256> cdfB= {};
+   for(int i=0; i<256; i++){
+      pdfR[i]=0;
+      cdfR[i]=0;
+      pdfG[i]=0;
+      cdfG[i]=0;
+      pdfB[i]=0;
+      cdfB[i]=0;
+   }
+
+   for(int i=0; i<h; i++){
+      for(int j=0; j<w; j++){
+         pdfR[get(i,j).r%255]+=1;
+         pdfG[get(i,j).g%255]+=1;
+         pdfB[get(i,j).b%255]+=1;
+      }
+   }
+
+   int sumR = 0;
+   int sumG = 0;
+   int sumB = 0;
+   bool tosetR = true;
+   bool tosetG = true;
+   bool tosetB = true;
+   unsigned char minR = 0;
+   unsigned char minG = 0;
+   unsigned char minB = 0;
+   for(int i=0; i<256; i++){
+      sumR += pdfR[i];
+      sumG += pdfG[i];
+      sumB += pdfB[i];
+      if (tosetR && sumR>0){
+         tosetR = false;
+         minR = i;
+      }
+
+      if (tosetG && sumG>0){
+         tosetG = false;
+         minG = i;
+      }
+
+      if (tosetB && sumB>0){
+         tosetB = false;
+         minB = i;
+      }
+      cdfR[i] = sumR;
+      cdfG[i] = sumG;
+      cdfB[i] = sumB;
+   }
+   cdfR[255] = w*h;
+   cdfG[255] = w*h;
+   cdfB[255] = w*h;
+
+   for(int i=0; i<h; i++){
+      for(int j=0; j<w; j++){
+         int r = round((cdfR[get(i,j).r%256]-minR)*(bins+1)/(w*h-minR));
+         int g = round((cdfG[get(i,j).g%256]-minG)*(bins+1)/(w*h-minB));
+         int b = round((cdfB[get(i,j).b%256]-minB)*(bins+1)/(w*h-minG));
+         if(r>255){r = 255;} else if(r<0){r = 0;}
+         if(g>255){g = 255;} else if(g<0){g = 0;}
+         if(b>255){b = 255;} else if(b<0){b = 0;}
+         result.set(i,j,Pixel{r,g,b});
+      }
+   }
+
+   return result;
+}
+
 Image Image::bitmap(int size) const {
    Image image(0, 0);
    
@@ -2035,7 +2112,7 @@ struct Test{
 }test;
 
 /**/
-Image Image::paint(const Image& fbrush, unsigned char cutoff, float weight) {
+Image Image::paint(const Image& background,const Image& fbrush, unsigned char cutoff, float weight) {
    // Image result = cquant(5).crand().gaussian(1).rnoise(2);
 
    Image result = Image{w,h};
@@ -2071,7 +2148,7 @@ Image Image::paint(const Image& fbrush, unsigned char cutoff, float weight) {
       float n = 2;
       float scale = 0.4*weight + 0.55;
       if(scale>.99){scale=.99;}
-      if(scale<.5){scale=.5;}
+      if(scale<.65){scale=.65;}
 
       if(t1.get(i,j).b>=cutoff && col.r==255 && col.g==255 && col.b==255){
          if(t1.get(i,j).b > 0){
@@ -2097,7 +2174,7 @@ Image Image::paint(const Image& fbrush, unsigned char cutoff, float weight) {
       for(int j = 0; j<w; j+=1){
          Pixel col = result.get(i,j);
          if(col.r==255 && col.g==255 && col.b==255){
-            result.set(i,j,get(i,j));
+            result.set(i,j,background.get(i,j));
          }
       }
    }

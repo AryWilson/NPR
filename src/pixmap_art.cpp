@@ -1,5 +1,8 @@
 #include <iostream>
 #include "image.h"
+#include <vector>
+#include <algorithm>
+#include <cmath>
 using namespace std;
 using namespace agl;
 
@@ -8,59 +11,26 @@ using namespace agl;
 int main(int argc, char** argv)
 {
    srand(time(0));
-   Image still;
-   if (!still.load("../source_images/sturgeon.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
-      exit(0);
-   }
-   Image still1;
-   if (!still1.load("../src/sturgeonpaint4.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
-      exit(0);
-   }
-   // still1.dirrected_gaussian(1.5,still.resize((still.width()/(float)still.height())*(900),900).tensor(true)).blur().save("../src/123.png");
 
-   // return 0;
-   
+   Image still;
    Image brush;
-   if (!brush.load("../texture/brush.png")) {
+   if (!brush.load("../texture/orb1.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
-   brush = brush.rotate90();
+   
+   // brush = brush.rotate90();
    Image brush_thin;
    if (!brush_thin.load("../texture/pencil_line.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
-   
-   // still.grayscale().normalize().blur().tensor(true).mask().threshold(40,.1).save("../src/mask1.png");
-   // brush = brush.rotate90();
 
-
-/* PAINTERLY
-
-   still = still.paint(brush,1,1);
-   still = still.paint(brush,100,.5);
-   still.save("../src/testing1.png");
-   return 0;*/
-/* PAINTERLY1
-   // Image edge_aligned = still.tensor(true);
-   // still = still.resize((still.width()/(float)still.height())*(1000),1000);
-   Image still_detail = still;
-
-   Image mask = still.grayscale().normalize().blur().tensor(true).mask().threshold(40,.1);
-   still = still.paint(brush,1,1);
-   still_detail = still_detail.paint(brush,100,.5);
-   still.alphaBlend(still_detail,mask).save("../src/testing1.png");
-   return 0;
-   */
-   
-   // string names[] = {"fam1","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","texture","party","cow"};
-   string names[] = {"party","cow","fam1","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","texture","orangutan"};//"sturgeon"
-   // small brush, multiple layers, low cutoff, high cutoff with smaller/thinner brush
+/* PAINTERLY*/
+   string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
+   // PEOPLE: small brush, multiple layers, low cutoff, high cutoff with smaller/thinner brush
    // string peps[] = {"fam1","man","kid","lottie","orangutan","sturgeon"}; 
-   // larger brush, mid cutoff
+   // STILLS, LANDSCAPE : larger brush, mid cutoff
    // string land[] = {"party","cow","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","still3","texture","orangutan","lottie"};
 
    int m = 900;
@@ -71,106 +41,67 @@ int main(int argc, char** argv)
       if (max(still.width(),still.height())>m){
          still = still.resize((still.width()/(float)still.height())*(m),m);
       }
-      still.paint(brush_thin,0,.9).save("../src/"+n+"paint14.png");
+      still = still.cnormalize();
+      Image background = still.paint(still,brush_thin,0,2);
+      background = still.paint(background,brush_thin,80,1.5);
+      still.paint(background,brush_thin,120,.8).save("../src/"+n+"paint1.png");
    }
    
    return 0;
-   // brush = brush.rotate90();
-   // brush.rotate(Pixel{10+127,127,0}).flipHorizontal().save("../src/r2.png");
-   // still.normalize().save("../src/r1.png");
-   // return 0;
-   // // brush.rotate90().rotate(Pixel{1,0,0}).save("r2.png");
-   // // still.tensor(true).blur().save("r3.png");
-   // Image t = still.tensor(true).blur();
-   // for(int i = 0; i<still.height(); i+=10){
-   //    for(int j = 0; j<still.width(); j+=10){
-   //       float x = j;
-   //       float y = i;
-   //       for(int n = 0;n<20;n++){
-   //          int m = t.get(y,x).b;
-   //          if(m<=10){break;}
-   //          still.set(y,x,Pixel{0,255,0});
-   //          x+=((t.get(y,x).r)-127.5f)/m;
-   //          y+=((t.get(y,x).g)-127.5f)/m;
-   //       }
-   //    }
-   // }
-   // still.save("../src/a.png");
-   // return 0;
+  
 
-// get tensor for directional strokes
-still = still.resize(still.width()/2,still.height()/2);
-brush = brush.resize(still.width()/25,still.height()/25);
-// Image t1 = still.gaussian(1.5).tensor(true).gaussian(1);
-Image t1 = still.tensor(true).gaussian(1);
-// Image t2 = still.tensor(false).blur();
-// quantize for color selection???
-// still = still.cquant(1);
-// scale stroke texture
-Image still_c = still;
-still = still.cquant(4).blur();
-// still.fill(Pixel{250,250,250});
-// still_c.fill(Pixel{0,250,250});
-for(int i = 0; i<still.height(); i+=1){
-   for(int j = 0; j<still.width(); j+=1){
-      // if(t1.get(i,j).b>0){}
+
+/*LINEART
+   string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
+   int m = 1000;
+   for(string n : names){
+      if (!still.load("../source_images/"+n+".png")) {
+         break;
+      }
+      if (max(still.width(),still.height())>m){
+         still = still.resize((still.width()/(float)still.height())*(m),m);
+      }
+      Image t1= still.tensor(true).blur();
+      Image t2= still.tensor(false).blur();
+      Image grey  = still.blur().grayscale().normalize();
+
+      float s_ = min(still.width(),still.height())/400.0f;
+      float sigma = s_;
+      float k = .75;
+      float cutoff = 6;
    
-      int temp_x = (t1.get(i,j).b)/51.0f;
-      int wx = brush.width();
-      still.brush(brush.resize((wx)*(temp_x),brush.height()).subimage((((wx)*(temp_x))/2.0f - wx/2.0f),0,brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), still_c.get(i,j));
-      
-      // if(t1.get(i,j).b>120){
+      Image line = ((grey.gaussian(sigma)).subtract(grey.gaussian(sigma*k))).threshold(cutoff,.2).dirrected_gaussian(1.2,t1);
 
-      //    still.brush(brush.resize(brush.width(),brush.height()), i-brush.height()/2,j-brush.width()/2, t1.get(i,j), still_c.get(i,j));
-      // }
-      
+      line.invert().save("../src/"+n+"lineart.png");
    }
-}
-//bat,bench,cityscape,cloud,fam1,house,hut,kdi,lottie,man,orangutan,party,sea1,shell,still3,still1,texture
-// still = still.rotate(Pixel{0,0,255});
-// still.save("../src/r.png");
-// still = still.resize(still.width()/4,still.height()/4);
-// still = still.grayscale().normalize();
-still.save("../src/manpaint1.png");
-return 0;
-// abstract back (thick lines, all magnitudes)
-//// ordering based on magnitude?? done with parrallel?
-//// sort image?? Pixel{x,y,m}, sort ascending based on m, then loop through
-//// apply kuwahara &&|| thresholding to tensor
+   
+   return 0;*/
 
-// detailed (lines that follow curve, largest magnitudes, alpha blend with image)
-// lineart
-
-// walkway sturgeon still1 sea1 orangutan lottie house fam1 bench kid
 /* CHARCOAL & WATERCOLOR
-   // still = still.resize(still.width()/4,still.height()/4);
-   float s_ = min(still.width(),still.height())/150.0f;
-   float sigma = s_;
-   float k = 1.3;
-   float tau  = 5;
-   float cutoff = 180;
-   
-   
-   Image t = still.tensor(false).blur();
-   Image t1 = still.tensor(true).blur();
-   Image grey = still.grayscale();
-   Image white = grey;
-   white.fill(Pixel{255,255,255});
-   grey = grey.alphaBlend(grey.gaussian(1.5),white.vingette().invert());
-   
-   // still = still.crand().cquant(4).threshold(cutoff,.005).dirrected_gaussian(2,t).blur().saturate(10);
-   // Image lines = ((grey.dirrected_gaussian_1(s_*.1,t)).subtract(grey.dirrected_gaussian_1(s_*1.5,t))).threshold(30,.1).dirrected_gaussian(1,t1);//
-   // Image line = ((grey.dirrected_gaussian_1(sigma,t)).subtract(grey.dirrected_gaussian_1(sigma*k,t))).threshold(21,.1);//.dirrected_gaussian(1,t1)
-   // line.save("v1.png");
-   // return 0;
-   Image charcoal = ((grey.dirrected_gaussian_1(sigma,t)).dog(grey.dirrected_gaussian_1(sigma*k,t),tau)).dirrected_gaussian(2,t1).threshold(cutoff,.01);//
+      string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
+   int m = 900;
+   for(string n : names){
+      if (!still.load("../source_images/"+n+".png")) {
+         break;
+      }
+      if (max(still.width(),still.height())>m){
+         still = still.resize((still.width()/(float)still.height())*(m),m);
+      }
+      Image t1= still.tensor(true).blur();
+      Image t2= still.tensor(false).blur();
+      Image grey  = still.grayscale().normalize();
 
-   charcoal.save("../src/r1.png");//.rnoise(1)
+      float s_ = min(still.width(),still.height())/150.0f;
+      float sigma = s_;
+      float k = 1.3;
+      float tau  = 5;
+      float cutoff = 180;
+   
+      Image line = ((grey.dirrected_gaussian_1(sigma,t1)).dog(grey.dirrected_gaussian_1(sigma*k,t1),tau)).dirrected_gaussian(2,t1).threshold(cutoff,.01);
 
-   // Image watercolor = ((grey.dirrected_gaussian_1(s_*.1,t)).subtract(grey.dirrected_gaussian_1(s_*1.5,t))).threshold(cutoff,.005).dirrected_gaussian(1,t1);// use cquant and rnoise
-   // lines.save("v1.png");
-   // return 0;
-
+      line.save("../src/"+n+"charcoal.png");
+   }
+   
    return 0;
 */
 /* CROSSHATCH
@@ -239,6 +170,14 @@ return 0;
    return 0;
 */
 
+
+
+
+
+
+
+
+//====================================================
 /* LIGHT EDGE... yikes
 // binary threshold of a photo
 still = still.resize(still.width()*.8,still.height()*.8);
