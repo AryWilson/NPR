@@ -579,6 +579,7 @@ Image Image::monochrome(int opt) const {
    for(int i = 0; i < h; i++){
       for(int j = 0; j < w; j++){
          struct Pixel from = get(i,j);
+
          unsigned char r = (from.r)*(red);
          unsigned char g = (from.g)*(green);
          unsigned char b = (from.b)*(blue);
@@ -724,30 +725,6 @@ Image Image::contrast(unsigned char ammount, unsigned char cutoff) const{
 }
 
 
-Image Image::redTeal(unsigned char ammount) const{
-   Image result(w, h);
-   unsigned char a = ammount;
-   unsigned char r,g,b = 0;
-   for(int i = 0; i < h; i++){
-      for(int j = 0; j < w; j++){
-         struct Pixel from = get(i,j);
-         if(from.r > from.b){
-            (from.r + 2*a < 255)? (r = from.r + a) : (r = 255);
-            (from.g - a > 0)? (g = from.g - a) : (g = 0);
-            b = from.b;
-            
-         } else {
-            (from.r - a > 0)? (r = from.r - a) : (r = 0);
-            (from.b + 2*a < 255)? (b = from.b + 2*a) : (b = 255);
-            (from.g + a < 255)? (g = from.g + a) : (g = 255);
-            // g = from.g; 
-         }
-         result.set(i,j,Pixel{r,g,b});
-      }
-   }
-   return result;
-   
-}
 
 
 Image Image::sobel() const {
@@ -983,8 +960,6 @@ Image Image::tensor(bool edge_aligned = false) const {
    // float sumx[3];
    // float sumy[3];
    float sumx,sumy;
-   // float max = -2550;
-   // float min = 2550;
    // for each pixel apply sobel kernel
    for(int i = 0; i < h; i++){
       for(int j = 0; j<w; j++){ 
@@ -1023,17 +998,12 @@ Image Image::tensor(bool edge_aligned = false) const {
                }
             }
          }
-         // result.set(i,j,Pixel{sumx,sumy,0});
-
-         // if(sumx>max){max=sumx;}
-         // if(sumy>max){max=sumy;}
-         // if(sumx<min){min=sumx;}
-         // if(sumy<min){min=sumy;}
+         // float mag = sumx*sumx+sumy*sumy;
+         // result.set(i,j,Pixel{(((sumx/mag)+1)*127.5),(((sumy/mag)+1)*127.5),mag});
 
 
          // construct data
          // structure tensor
-// /*
          int ST[4] = {sumx*sumx, sumx*sumy, sumx*sumy, sumy*sumy};
          // float ST[4] = {dot(sumx,sumx), dot(sumx,sumy), dot(sumx,sumy), dot(sumy,sumy)};
          // result.set(i,j,Pixel{(ST[0]+1)*127.5, (ST[3]+1)*127.5, (ST[1]+1)*127.5});
@@ -1066,24 +1036,9 @@ Image Image::tensor(bool edge_aligned = false) const {
             t2[1] = (((t2[1]/mag2) + 1)/2.0)*255;
             result.set(i,j,Pixel{t2[0], t2[1], mag2});
          }
-         
-         
-         
-// */
-         // result.set(i,j,(t1[1]<0)?Pixel{t1[1],0,0}:Pixel{0,t1[1],0});
-         // green and red tensor flow
-         // sumx = sumx/2.0 + 127.5;
-         // sumy = sumy/2.0 + 127.5;
-         // sumy>255 ? pixy=255 : (sumy<0 ? pixy=0 : (pixy=sumy));
-         // sumx>255 ? pixx=255 : (sumx<0 ? pixx=0 : (pixx=sumx));
-         // result.set(i,j,Pixel{pixx,pixy,0});
+      
       }
    }
-
-   // std::cout << max;
-   // std::cout << "\n";
-   // std::cout << min;
-   
    return result;
 }
 
@@ -2002,6 +1957,57 @@ Image Image::normalize() {
 }
 
 
+//weighted normalizes
+Image Image::wnormalize() {
+   unsigned char bins = 255;
+   unsigned char min = 0;
+   Image result = Image(w, h);
+   Image t = tensor(true).blur();
+   std::array<float, 256> pdf= {};
+   std::array<double, 256> cdf= {};
+   //init cdf and pdf
+   for(int i=0; i<256; i++){
+      pdf[i]=0;
+      cdf[i]=0;
+   }
+
+   //populate pdf
+   for(int i=0; i<h; i++){
+      for(int j=0; j<w; j++){
+         // if(t.get(i,j).b>200){
+         pdf[get(i,j).r%255]+=1;//t.get(i,j).b/255.0f;
+         // }
+      }
+   }
+
+   //pdf to cdf
+   int sum = 0;
+   bool toset = true;
+   for(int i=0; i<256; i++){
+      sum += pdf[i];
+      if (toset && sum>0){
+         toset = false;
+         min = i;
+      }
+      cdf[i] = sum;
+   }
+   // cdf[255] = w*h;
+
+   for(int i=0; i<h; i++){
+      for(int j=0; j<w; j++){
+         if(t.get(i,j).b>200){
+
+            int r = round((cdf[get(i,j).r%256]-min)*(bins+1)/(w*h-min));
+            if(r>255){r = 255;}
+            if(r<0){r = 0;}
+            result.set(i,j,Pixel{r,r,r});
+         }
+      }
+   }
+
+   return result;
+}
+
 Image Image::cnormalize() {
    unsigned char bins = 255;
    Image result = Image(w, h);
@@ -2123,10 +2129,12 @@ Image Image::paint(const Image& background,const Image& fbrush, unsigned char cu
    // used by qsort to sort an array
    
    std::vector<Test> tens;
+   // get tensor for dirrected paint
+   Image t1 = blur().normalize().tensor(true).blur();
 
    for(int i = 0; i<h; i+=1){
       for(int j = 0; j<w; j+=1){
-         tens.push_back(Test{j,i,get(i,j).b});
+         tens.push_back(Test{j,i,t1.get(i,j).b});
       }
    }
 
@@ -2136,9 +2144,6 @@ Image Image::paint(const Image& background,const Image& fbrush, unsigned char cu
    //APPLY PAINT
    // scale stroke texture
    brush = brush.resize((w/25)*weight,(h/25)*weight);
-   // get tensor for dirrected paint
-   Image t1 = tensor(true).blur();
-   // Image t1 = gaussian(1.5).tensor(true).gaussian(1);
 
    /* with sorting*/
    for(Test xym : tens){

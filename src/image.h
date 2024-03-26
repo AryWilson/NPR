@@ -217,9 +217,6 @@ class Image {
   // makes the darkest values darker and the lightest values lighter
   Image contrast(unsigned char ammount, unsigned char cutoff) const;
 
-  // applies red-teal filter
-  Image redTeal(unsigned char ammount) const;
-
   // returns the average va;ue [0,255] of a given pixel
   // optional greyscale flag
   // unsigned char average(struct Pixel rgb, bool greyscale = false);
@@ -305,6 +302,7 @@ class Image {
   // std::vector<float> sumarize();
   std::array<int, 255> sumarize();
   Image normalize();
+  Image wnormalize();
   Image cnormalize();
 
 

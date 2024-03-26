@@ -13,162 +13,259 @@ int main(int argc, char** argv)
    srand(time(0));
 
    Image still;
-   Image brush;
-   if (!brush.load("../texture/orb1.png")) {
+
+   /* visualize tensor
+   if (!still.load("../source_images/line.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
+   // still = still.resize(still.width()/2,still.height()/2);
+   Image t = still.tensor(true);
+   float x,y,ii,jj;
+   Pixel c;
    
-   // brush = brush.rotate90();
+   for(int i = 0; i<still.height(); i=i+1){
+      for(int j = 0; j<still.width(); j=j+1){
+         if(t.get(i,j).b>240){
+            still.set(i,j,Pixel{255,0,0});
+            ii = i;
+            jj = j;
+            for(int n = 0; n<10; n++){
+               c = t.get(round(ii),round(jj));
+               if(c.b<50){break;}
+               x = ((float)c.r/127.5f)-1.0f;
+               y = ((float)c.g/127.5f)-1.0f;
+               ii = ii + y;
+               jj = jj + x;
+               still.set(round(ii),round(jj),Pixel{0,255,0});
+            }
+         }
+      }
+   }
+
+   still.save("../src/image.png");
+   return 0;*/
+
+   Image brush;
+   if (!brush.load("../texture/brush.png")) {
+      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      exit(0);
+   }
+   Image orb;
+   if (!orb.load("../texture/orb1.png")) {
+      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      exit(0);
+   }
    Image brush_thin;
    if (!brush_thin.load("../texture/pencil_line.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
 
-/* PAINTERLY*/
+/*cartoon?? - tensor as mask
    string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
+
+   int m = 900;
+   for(string n : names){
+      if (!still.load("../source_images/"+n+".png")) {
+         continue;
+      }
+      if (max(still.width(),still.height())>m){
+         still = still.resize((still.width()/(float)still.height())*(m),m);
+      }
+      Image quant = still.cquant(1);
+      Image mask = still.tensor(true);
+      for (int i =0; i<mask.height(); i++){
+         for (int j =0; j<mask.width(); j++){
+            if(mask.get(i,j).b<50){
+               mask.set(i,j,Pixel{0,0,0});
+            } else {
+               mask.set(i,j,Pixel{255,255,255});
+            }
+         }
+
+      }
+      mask.save("../src/"+n+"toonl.png");
+      still.alphaBlend(quant,mask).save("../src/"+n+"toon.png");
+
+   }
+   
+   return 0;*/
+   // string names[] = {"biologist","crowd","dorian","dress","girls","nails","ring","skunk1","skunk2","skunk3","students","braids"};
+   // string names[] = {"kid", "man", "party", "house", "shell", "sturgeon", "starfish", "bat", "coast", "cityscape", "bench", "hut", "sea1"};
+   // string names[] = {"still3","still4","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
+   string names[] = {"catsith1"};
+   int m = 1000;
+
+
+/* PAINTERLY*/
+   // string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
    // PEOPLE: small brush, multiple layers, low cutoff, high cutoff with smaller/thinner brush
    // string peps[] = {"fam1","man","kid","lottie","orangutan","sturgeon"}; 
    // STILLS, LANDSCAPE : larger brush, mid cutoff
    // string land[] = {"party","cow","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","still3","texture","orangutan","lottie"};
-
-   int m = 900;
+   // int m = 1000;
    for(string n : names){
       if (!still.load("../source_images/"+n+".png")) {
-         break;
+         cout<<"what";
+         continue;
       }
-      if (max(still.width(),still.height())>m){
-         still = still.resize((still.width()/(float)still.height())*(m),m);
-      }
-      still = still.cnormalize();
-      Image background = still.paint(still,brush_thin,0,2);
-      background = still.paint(background,brush_thin,80,1.5);
-      still.paint(background,brush_thin,120,.8).save("../src/"+n+"paint1.png");
+      // if (max(still.width(),still.height())>m){
+      //    still = still.resize((still.width()/(float)still.height())*(m),m);
+      // }
+      // Image grey = still.grayscale().normalize();
+      // grey.save("../src/00"+n+"paint.png");
+      // still.normalize().save("../src/0123"+n+".png");
+      // still.wnormalize().save("../src/0weight"+n+".png");
+      // continue;
+      still = still.cnormalize().alphaBlend(still,.8);
+      Image background = still.paint(still,brush,0,.7);
+      background = still.paint(background,orb,70,.5);
+      still.paint(background,orb,150,.25).save("../src/000"+n+"paint.png");
    }
-   
    return 0;
-  
 
 
 /*LINEART
-   string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
-   int m = 1000;
+   // string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
+   // int m = 1000;
    for(string n : names){
       if (!still.load("../source_images/"+n+".png")) {
-         break;
+         continue;
       }
       if (max(still.width(),still.height())>m){
          still = still.resize((still.width()/(float)still.height())*(m),m);
       }
-      Image t1= still.tensor(true).blur();
-      Image t2= still.tensor(false).blur();
-      Image grey  = still.blur().grayscale().normalize();
+      Image t1= still.blur().tensor(true).blur();
+      // Image t2= still.tensor(false).blur();
+      // Image grey  = still.blur().grayscale().normalize();
 
-      float s_ = min(still.width(),still.height())/400.0f;
-      float sigma = s_;
-      float k = .75;
-      float cutoff = 6;
+      // float s_ = min(still.width(),still.height())/400.0f;
+      // float sigma = s_;
+      // float k = .75;
+      // float cutoff = 6;
    
-      Image line = ((grey.gaussian(sigma)).subtract(grey.gaussian(sigma*k))).threshold(cutoff,.2).dirrected_gaussian(1.2,t1);
+      // Image line = ((grey.gaussian(sigma)).subtract(grey.gaussian(sigma*k))).threshold(cutoff,.2).dirrected_gaussian(1.2,t1);
 
-      line.invert().save("../src/"+n+"lineart.png");
-   }
+      // line.invert().save("../out/"+n+"lineart.png");
+      Image white = still;
+      white.fill(Pixel{255,255,255});
+      still.paint(white,brush_thin,90,.9).save("../out/"+n+"lineart1.png");
+
+   }*/
    
-   return 0;*/
 
-/* CHARCOAL & WATERCOLOR
-      string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
-   int m = 900;
+/* CHARCOAL & WATERCOLOR*/
+      // string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
+   // int m = 900;
    for(string n : names){
       if (!still.load("../source_images/"+n+".png")) {
-         break;
+         continue;
       }
       if (max(still.width(),still.height())>m){
          still = still.resize((still.width()/(float)still.height())*(m),m);
       }
-      Image t1= still.tensor(true).blur();
+      Image t1= still.blur().tensor(true).blur();
       Image t2= still.tensor(false).blur();
-      Image grey  = still.grayscale().normalize();
+      Image grey  = still.grayscale();
+      grey = grey.alphaBlend(grey.normalize(),.6);
+      // grey = grey.normalize();
 
       float s_ = min(still.width(),still.height())/150.0f;
       float sigma = s_;
-      float k = 1.3;
-      float tau  = 5;
-      float cutoff = 180;
-   
-      Image line = ((grey.dirrected_gaussian_1(sigma,t1)).dog(grey.dirrected_gaussian_1(sigma*k,t1),tau)).dirrected_gaussian(2,t1).threshold(cutoff,.01);
+      float k = 1.2;
+      float tau  = 21;
+      float cutoff = 190;
+      Image mask = t1.mask().blur().threshold(80,.009);
+      Image line = ((grey.dirrected_gaussian_1(sigma,t1)).dog(grey.dirrected_gaussian_1(sigma*k,t1),tau)).dirrected_gaussian(2.5,t1).threshold(cutoff,.008);
+      Image grain = line.crand().rnoise(3).alphaBlend(line,mask);
+      
+      line.save("../pm/"+n+"charcoal0.png");
+      grain.save("../pm/"+n+"charcoal1.png");
 
-      line.save("../src/"+n+"charcoal.png");
+      // for(int i=0; i<still.height(); i++){
+      //    for(int j=0; j<still.width(); j++){
+      //       if(grey.get(i,j).r>210){still.set(i,j,Pixel{255,255,255});}
+      //    }
+      // }
+      // still = still.cquant(4).crand().blur();
+      // line.multiply(still).save("../out/"+n+"water.png");
    }
-   
    return 0;
-*/
-/* CROSSHATCH
+   
+/* CROSSHATCH & LINEART*/
 
-   Image pannel;
-   if (!pannel.load("../texture/ink1.png")) {
+   Image pannel_;
+   if (!pannel_.load("../texture/ink1.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
-   Image pannel1;
-   if (!pannel1.load("../texture/ink2.png")) {
+   Image pannel_1;
+   if (!pannel_1.load("../texture/ink2.png")) {
       std::cout << "ERROR: Cannot load image! Exiting...\n";
       exit(0);
    }
+   for(string n : names){
+      Image pannel = pannel_;
+      Image pannel1 = pannel_1;
+      if (!still.load("../source_images/"+n+".png")) {
+         continue;
+      }
+      if (max(still.width(),still.height())>m){
+         still = still.resize((still.width()/(float)still.height())*(m),m);
+      }
+      Image col = still;
+      still = still.grayscale();
+      Image t1 = still.blur().tensor(true).blur();
+      // Image lines = ((grey.dirrected_gaussian_1(sigma,t2)).subtract(grey.dirrected_gaussian_1(sigma*k,t2))).threshold(10,.5).dirrected_gaussian(1,t1);//
+      Image t2= still.blur().tensor(false).blur();
 
-   // still = still.resize(still.width()/2,still.height()/2);
-   still = still.grayscale();
-   float s_ = min(still.width(),still.height())/150.0f;
-   Image t = still.tensor(false).gaussian(1.5);
-   Image t1 = still.tensor(true).gaussian(1);
-   Image grey = still.grayscale().invert().gaussian(1);
-   Image lines = ((grey.dirrected_gaussian_1(s_*.1,t)).subtract(grey.dirrected_gaussian_1(s_*1.5,t))).threshold(30,.1).dirrected_gaussian(1,t1);//
-   // lines.save("v1.png");
-   // return 0;
+      float sigma = min(still.width(),still.height())/400.0f;
+      float k = .79;
+      float cutoff = 7;
+      
+      Image line = ((still.gaussian(sigma)).subtract(still.gaussian(sigma*k))).threshold(cutoff,.2).dirrected_gaussian(1.2,t1);
 
-   int size = min(still.height(),still.width())/6;
-   pannel = pannel.resize(size + rand()%20 -10,size+ rand()%20 -10);
-   pannel1 = pannel1.resize(size+ rand()%20 -10,size+ rand()%20 -10);
-   Image pannel2 = pannel.resize(size+ rand()%20 -10,size+ rand()%20 -10).rotate90();
-   Image pannel3 = pannel1.resize(size+ rand()%20 -10,size+ rand()%20 -10).rotate90();
-   
+      // Image lines = t1.monochrome(2).grayscale().threshold(25,.1).dirrected_gaussian(1,t1);
+      // lines.invert().save("../out/"+n+"lineart.png");
+      int size = min(still.height(),still.width())/6.9f;
+      pannel = pannel.resize(size + rand()%20 -10,size+ rand()%20 -10);
+      pannel1 = pannel1.resize(size+ rand()%20 -10,size+ rand()%20 -10);
+      Image pannel2 = pannel.resize(size+ rand()%20 -10,size+ rand()%20 -10).rotate90();
+      Image pannel3 = pannel1.resize(size+ rand()%20 -10,size+ rand()%20 -10).rotate90();
 
-   Image black = still.threshold(30,.1);
-   Image dark = still.threshold(50,.1);
-   Image med = still.threshold(100,.1);
-   Image light = still.threshold(120,.1);
-   Image white = still.threshold(160,.1);
-   black.save("black.png");
-   dark.save("black1.png");
-   med.save("black2.png");
-   light.save("black3.png");
-   white.save("black4.png");
+      still = still.normalize();
+      Image black = still.threshold(20,.04);
+      Image dark = still.threshold(70,.09);
+      Image med = still.threshold(120,.09);
+      Image light = still.threshold(150,.09);
+      Image white = still.threshold(200,.09);
+      // keep the whites white (line-free)
+      Image w = white;
+      w.fill(Pixel{0,0,0});
+      line = line.alphaBlend(w,light.blur());
 
-   pannel = still.toTile(pannel);
-   pannel1 = still.toTile(pannel1);
-   pannel2 = still.toTile(pannel2);
-   pannel3 = still.toTile(pannel3);
-   pannel.save("panel.png");
-   pannel1.save("panel1.png");
-   pannel2.save("panel2.png");
-   pannel3.save("panel3.png");
-   pannel = pannel.lightest(dark);
-   pannel1 = pannel1.lightest(med);
-   pannel2 = pannel2.lightest(light);
-   pannel3 = pannel3.lightest(white);
-   pannel.save("panel4.png");
-   pannel1.save("panel5.png");
-   pannel2.save("panel6.png");
-   pannel3.save("panel7.png");
-   pannel = pannel.darkest(pannel1);
-   pannel1 = pannel2.darkest(pannel3);
-   pannel = pannel.darkest(pannel1);
-  
-   
-   pannel.darkest(black).darkest(lines).save("fin.png");
+
+      pannel = still.toTile(pannel);
+      pannel1 = still.toTile(pannel1);
+      pannel2 = still.toTile(pannel2);
+      pannel3 = still.toTile(pannel3);
+
+      pannel3 = pannel3.lightest(white).add(pannel1.invert());
+      pannel = pannel.lightest(dark);
+      pannel1 = pannel1.lightest(med);
+      pannel2 = pannel2.lightest(light);
+
+      pannel = pannel.subtract(pannel1.invert());
+      pannel1 = pannel2.subtract(pannel3.invert());
+      pannel = pannel.subtract(pannel1.invert());
+      
+
+      pannel.darkest(black).subtract(line).save("../out/"+n+"crosshatch2.png");
+      // col.alphaBlend(w.invert(),pannel.darkest(black)).save("../out/"+n+"coloredPencil.png");
+   }
+
    return 0;
-*/
 
 
 
@@ -392,352 +489,6 @@ return 0;*/
    // return 0;
 
 
-   
-   // Image w = center;
-   // w.fill(Pixel{0,0,0});
-
-   // for(int i =0;i<w.height();i++){
-   //    float y = i;
-   //    for(int j =0;j<w.width();j++){
-   //       float x = j;
-   //       Pixel rgb = center.get(y,x);
-   //       if(rgb.b>90){
-   //          for (int n =0;n<10;n++){
-   //             w.set(y,x,Pixel{255,0,0});
-   //             x+=(rgb.r)/127.5 - 1;
-   //             y+=(rgb.g)/127.5 - 1;
-   //          }
-   //       }
-
-         
-         
-   //    }
-   // }
-   // w.save("center1.png");
-   
-
-   // center.save("center.png");
-   // center = center.gaussian(1.4);
-   // center = center.vfc();
-   // center.save("center1.png");
-   // return 0;
-   // center = center.dirrected_gaussian(1.6,center);
-   // center.save("center2.png");
-
-   // cat = cat.dirrected_gaussian(5.6,center);
-   // cat.save("center2.png");
-   // return 0;
-   // cat = cat.gaussian(1.4);
-   // Image white = cat;
-   // white.fill(Pixel{255,255,255});
-   
-   // int x,y,i,j;
-   // Pixel to_set = Pixel{255,0,0};
-   // for(int a = 0;a<cat.height();a+=5){      
-   //    for(int b = 0;b<cat.width();b+=5){
-   //       i = a;
-   //       j = b;
-   //       to_set = cat.get(i,j);
-   //       for (int n = 0;n<30;n++){
-   //          Pixel p = center.get(i,j);
-   //          x = p.r>0?1:0;
-   //          y = p.b<100?(p.g>0?1:0):(p.g>0?-1:0);
-   //          i = i+x;
-   //          j = j+y;
-   //          white.set(i,j,to_set);
-   //       }
-   //    }
-   // }
-   
-   // white.save("center2.png");
-
-   // cat = cat.gaussian(1.4);
-   // cat.save("center1.png");
-   // cat = cat.vfc();
-   // cat.save("center2.png");
-
-   return 0 ;
-
-   // Image lines = cat.sobel().invert();
-   // Image detail = cat.vingette();
-   // cat = cat.lightest();
-   // lines = cat.darkest(lines);
-   // Image p = cat.quantization(8).crand();
-   // cat = lines.lightest(p);
-
-   // // cat = cat.vingette();
-   // Image lines = cat.sobel().invert();
-   // // lines = cat.darkest(lines).crand();
-   // Image detail = cat.cquant();
-   // Image blur = detail.crand();
-
-   // Image white = cat;
-   // white.fill(Pixel{255,255,255});
-   // Image center = white.vingette();
-   // Image big_center = center.subimage(.1*center.width(),.1*center.height(),.8*center.width(),.8*center.height()).resize(center.width(),center.height());
-   // big_center = big_center.add(big_center).gaussian(3.5);
-   // big_center.save("center.png");
-   // Image edge = center.invert();
-   // detail = detail.darkest(lines).add(edge);//detail with small white edges
-   // // blur.save("sobel_1.png");
-   // // detail.save("sobel_2.png");
-   // blur.add(detail).save("sobel.png");
-
-
-   // return 0;
-
-   // Image hi = cat.cquant().crand().lightest(cat.toTile(pastel).invert());
-   // cat = cat.alphaBlend(hi,.5);
-
-   // cat.save("test.png");
-
-
-   
-   // return 0;
-
-
-   // //load in image
-   // Image hatch;
-   // if (!hatch.load("../texture/pencil1.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // Image hatch1;
-   // if (!hatch1.load("../texture/pencil2.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // // cat.tensor().save("tensor.png");
-
-   
-
-   // // cat = cat.cquant();
-   // // cat = cat.crand().alphaBlend(cat,.4);
-   // // cat.save("cowpaint.png");
-
-   // //one
-   // hatch1 = hatch1.resize(200,200);
-   // hatch = hatch.resize(200,200);
-   // Image white_ = cat;
-   // white_.fill(Pixel{30,30,30});
-   // // cat = cat.grayscale().cquant();
-   // // Image cat1 = cat.subtract(white);
-   // // cat = cat.add(white);
-   // // cat1 = cat1.crosshatch(hatch1);
-   // // cat = cat.crosshatch(hatch);
-   // // cat.darkest(cat1).save("crosshatch.png");
-
-   // //two
-   // Image cat1 = cat.subtract(white).crosshatch(hatch1);
-   // cat = cat.crosshatch(hatch);
-   // cat.darkest(cat1).save("crosshatchpng1.png");
-
-
-   // return 0;
-   
-
-   // // grayscale
-   // cat = cat.grayscale();
-   // // gaussians .5
-   // float k = 1.4;
-   // Image cat_5 = cat.gaussian(k);
-   // // gaussians 2.0
-   // Image cat2 = cat.gaussian(1.6*k);
-   // // dog
-   // // cat = cat2.subtract(cat_5);
-   // // cat.save("dog1.png");
-
-   
-   // cat = cat2.dog(cat_5,5.0f);
-   // cat.save("dog5.png");
-   
-   // // threshold
-   // cat = cat.threshold(200,0.02f);
-   // cat.save("threshold200_1.png");
-
-   // // Image tile;
-   // // if (!tile.load("../texture/pencil1.png")) {
-   // //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   // //    exit(0);
-   // // }
-
-   // // cow = cow.add(cow).add(cow);
-   // // cat.fill(Pixel{255,255,255});
-   // // cat.subtract(cow).save("cow7.png");
-
-
-
-   // Image cat1 = cat.grayscale();
-   // cat1.save("grayscale.png");
-   // // gaussians .5
-   // Image cat2 = cat1.gaussian(0.5f);
-   // // gaussians 2.0
-   // Image cat3 = cat1.gaussian(2.0f);
-   // // dog
-   // cat3.subtract(cat2).save("dog_1.png");
-   // cat1 = cat3.dog(cat2, 0.4);
-   // cat1.save("dog.png");
-   // // threshold
-   // cat1 = cat1.threshold(50.0f, 0.4f);
-   // cat1.save("threshold.png");
-   // cat = cat.cquant();
-   // Image cat1 = cow.add(cow).add(cow);
-   // cat.crand().blur().subtract(cat1).save("cowlines.png");
-   // cat.crand().gaussian(1.0f).cquant().subtract(cat1).save("cowlines1.png");
-
-
-
-
-
-
-   // Image background(cat.width(),cat.height());
-   // background.fill(Pixel{0,0,0});
-
-   // Image pannel;
-   // pannel = cat.crosshatch(tile);
-
-   // pannel.save("crosshatch3.png");
-   // Image cat;
-   // if (!cat.load("crosshatch3.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // Image pannel;
-   // if (!pannel.load("../texture/stiple1.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // Image paper;
-   // if (!paper.load("../source_images/paper_texture.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // paper = paper.resize(cat.width(), cat.height());
-   // // pannel = cat.toTile(pannel);
-
-   // cat = cat.subtract(pannel.invert());
-   // cat = paper.subtract(cat.invert());
-   // cat.save("crosshatch3.png");
-   
-   // // load image
-   // Image woods2;
-   // if (!woods2.load("../images/woods.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   
-   // // sobel-blur image
-   // Image sobel = woods2.blur();
-   // sobel = sobel.edgeFinder();
-
-   // Image blend = woods2.alphaBlend(sobel, 0.4f);
-   // blend = blend.contrast(25);
-   // blend = blend.saturate(15);
-   // blend = blend.gammaCorrect(2.1);
-
-   // blend.save("sobel2.png"); 
-
-   // Image earth;
-   // if (!earth.load("../images/earth.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-
-   // //line an image
-   // Image lined = earth.blur();
-   // lined = lined.edgeFinder();
-   // lined = lined.invert();
-   // lined.save("lines.png"); 
-
-   // lined = earth.alphaBlend(lined, 0.5f);
-   // lined.save("lined.png"); 
-
-   // // monochrome sobel
-   // Image earth;
-   // if (!earth.load("../images/hair.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // Image sludge = earth.blur();
-   // sludge =  sludge.edgeFinder();
-   // sludge =  sludge.contrast(100);
-   // Image sludge1 = sludge.subimage(0,0,sludge.width()-5,sludge.height()-5);
-   // Image sludge2 = sludge.subimage(0,5,sludge.width()-5,sludge.height());
-   // Image sludge3 = sludge.subimage(6,0,sludge.width(),sludge.height()-6);
-   // sludge1 = sludge1.resize(sludge.width(),sludge.height());
-   // sludge2 = sludge2.resize(sludge.width(),sludge.height());
-   // sludge3 = sludge3.resize(sludge.width(),sludge.height());
-   
-   // sludge1 = sludge1.monochrome(0);
-   // sludge1 = sludge1.saturate(30);
-   // sludge2 = sludge2.monochrome(1);
-   // sludge2 = sludge2.saturate(30);
-   // sludge3 = sludge3.monochrome(2);
-   // sludge3 = sludge3.saturate(30);
-
-   // sludge1 = sludge1.alphaBlend(sludge2, 0.8f);
-   // sludge = sludge1.alphaBlend(sludge3, 0.8f);
-   // sludge = sludge.gammaCorrect(2.2);
-   // sludge = sludge.contrast(80);
-
-   // sludge.save("sludge.png"); 
-
-   // // binary + blur
-   // Image cat;
-   // if (!cat.load("../images/cat.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // Image catCol = cat.cquant();
-
-   // cat.save("cat1.png");
-   // Image catLine = cat.contrast(100);
-   // catLine = cat.edgeFinder();
-   // catLine = catLine.invert();
-   // catLine = catLine.contrast(100);
-   // int w = cat.width();
-   // int h = cat.height();
-   // cat = cat.resize(cat.width()/5,cat.height()/5);
-   // cat = cat.blur();
-   // cat = cat.resize(w,h);
-   // cat = cat.saturate(20);
-   // cat = cat.contrast(20);
-   // cat = cat.blur();
-   // cat = cat.alphaBlend(catLine, 0.3f);
-
-   // cat.save("cat.png"); 
-
-   
-
-   // // bird sobel, invert, monochrome, filter
-   // Image bird;
-   // if (!bird.load("../images/fire.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // Image fire = bird.edgeFinder();
-   // fire = fire.invert();
-   // fire.save("fire.png"); 
-
-   // bird = bird.blur();
-   // bird = bird.edgeFinder();
-   // Image birdW = bird.invert();
-   // Image birdR = bird.monochrome(0);
-   // Image birdY = bird.monochrome(3);
-   // Image birdO = birdY.alphaBlend(birdR, 0.4f);
-
-
-   
-   // birdO.save("bird.png"); 
-   // Image woods;
-   // if (!woods.load("../images/woods1.png")) {
-   //    std::cout << "ERROR: Cannot load image! Exiting...\n";
-   //    exit(0);
-   // }
-   // // binary
-   // Image binary = woods.contrast(25);
-   // binary = binary.saturate(255);
-   // binary.save("binary.png");
    return 0;
 }
 
