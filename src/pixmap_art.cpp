@@ -13,106 +13,42 @@ using namespace agl;
 int main(int argc, char** argv)
 {
 
-   // std::vector<std::string> videos = {"../source_images/cow.mov","../source_images/squirrel.mov","../source_images/squirrel.mov"};
-   //    const char* outfilename = "vid";
-
-   //    std::vector<agl::Image> video_frames;
-   //    if (LoadVideo(videos[0], video_frames)) {
-   //      std::string outname = outfilename;
-   //      outname += "-0.ppm";
-   //      video_frames[0].save(outname, true);
-   //    } else { printf("Could not open video:\n");}
-   // return 0;
 
    srand(time(0));
 
    Image still;
-   
-   /* visualize tensor
-   if (!still.load("../source_images/line.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
-      exit(0);
-   }
-   // still = still.resize(still.width()/2,still.height()/2);
-   Image t = still.tensor(true);
-   float x,y,ii,jj;
-   Pixel c;
-   
-   for(int i = 0; i<still.height(); i=i+1){
-      for(int j = 0; j<still.width(); j=j+1){
-         if(t.get(i,j).b>240){
-            still.set(i,j,Pixel{255,0,0});
-            ii = i;
-            jj = j;
-            for(int n = 0; n<10; n++){
-               c = t.get(round(ii),round(jj));
-               if(c.b<50){break;}
-               x = ((float)c.r/127.5f)-1.0f;
-               y = ((float)c.g/127.5f)-1.0f;
-               ii = ii + y;
-               jj = jj + x;
-               still.set(round(ii),round(jj),Pixel{0,255,0});
-            }
-         }
-      }
-   }
-
-   still.save("../src/image.png");
-   return 0;*/
-
+  
    Image brush;
    if (!brush.load("../texture/brush.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      std::cout << "ERROR: Cannot load image! ";
       exit(0);
    }
    Image orb;
-   if (!orb.load("../texture/orb1.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
+   if (!orb.load("../texture/orb.png")) {
+      std::cout << "ERROR: Cannot load image! ";
       exit(0);
    }
    Image brush_thin;
    if (!brush_thin.load("../texture/pencil_line.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      std::cout << "ERROR: Cannot load image! ";
       exit(0);
    }
    Image circle;
    if (!circle.load("../texture/circle.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      std::cout << "ERROR: Cannot load image! ";
       exit(0);
    }
+   // string names[] = {"still3","bailar","old","whiteedge","two","lottie","grain","walkway","cow","skin1","orangutan","still4","party","bmc","bmc","sea4","road","mount","still1","sea2","tree","spain","cloud","shed","rock","house","shell","sturgeon","silhouette","skin","flor","starfish","bat","texture","coast","cityscape","sheep","woods","cass","bench","back","sea1","three"};
+   string names[] = {"party"};
 
 
-   //    if (!still.load("../source_images/party.png")) {
-   //       cout<<"what";
-   //    }
-   //    // still = still.resize(still.width()/1.2,still.height()/1.2);
-   //    Image t = still.blur().tensor(true).blur();
-   //    // Image grey = still.grayscale().normalize();
-   //    // grey.save("../src/00"+n+"paint.png");
-   //    // still.normalize().save("../src/0123"+n+".png");
-   //    // still.wnormalize().save("../src/0weight"+n+".png");
-   //    // continue;
-   //    // still = still.cnormalize().alphaBlend(still,.8);
-
-   //    Image background = still.blur().paint(still,brush,0,1.8);
-   //    background.save("../src/alana1.png");
-   //    background = still.paint(background,brush,30,1);
-   //    background.save("../src/alana2.png");
-   //    background = still.paint(background,circle,50,.4);
-   //    background.save("../src/alana3.png");
-   //    // background = still.blur().paint(background,orb,100,1.5);
-   //    // background.save("../src/alana4.png");
-   //    still = still.paint(background,orb,150,1);
-   //    still.save("../src/alana5.png");
-   //    // still.dirrected_gaussian(9,t).save("../src/alana6.png");
-   // return 0;
-
-/*cartoon?? - tensor as mask
-   string names[] = {"still3","still4","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1","bailar", "bmc", "creep","dad","flor", "foliage", "grain", "mount", "old", "one", "plaza", "portrait", "road", "rock", "sea2","sea3","sea4", "shade", "shed", "sheep", "sheep", "silhouette", "spain", "tree","trees","vt","whiteedge"};
+// CARTOON - tensor as mask/**/
 
    int m = 1000;
    for(string n : names){
       if (!still.load("../source_images/"+n+".png")) {
+         std::cout << "ERROR: Cannot load image! ";
+
          continue;
       }
       if (max(still.width(),still.height())>m){
@@ -130,33 +66,20 @@ int main(int argc, char** argv)
          }
 
       }
-      // mask.save("../src/"+n+"toonl.png");
-      still.alphaBlend(quant,mask).save("../src/"+n+"toon.png");
+
+      still.alphaBlend(quant,mask).save("../images/new/"+n+"toon.png");
 
    }
    
-   return 0;*/
-   // string names[] = {"biologist","crowd","dorian","dress","girls","nails","ring","skunk1","skunk2","skunk3","students","braids"};
-   // string names[] = {"kid", "man", "party", "house", "shell", "sturgeon", "starfish", "bat", "coast", "cityscape", "bench", "hut", "sea1"};
-   // string names[] = {"still3","still4","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1","bailar", "bmc", "creep","dad","flor", "foliage", "grain", "mount", "old", "one", "plaza", "portrait", "road", "rock", "sea2","sea3","sea4", "shade", "shed", "sheep", "sheep", "silhouette", "spain", "tree","trees","vt","whiteedge"};
-   // 82,93,192
-   // string names[] = {"foliage", "shade"};
-   // string names[] = {"bailar", "bmc", "creep","dad","flor", "foliage", "grain", "mount", "old", "one", "plaza", "portrait", "road", "rock", "sea2","sea3","sea4", "shade", "shed", "sheep", "sheep", "silhouette", "spain", "tree","trees","vt","whiteedge"};
-   // int m = 700;
+   // return 0;
 
 
 /* PAINTERLY */
-   // string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
-   // PEOPLE: small brush, multiple layers, low cutoff, high cutoff with smaller/thinner brush
-   // string peps[] = {"fam1","man","kid","lottie","orangutan","sturgeon"}; 
-   // STILLS, LANDSCAPE : larger brush, mid cutoff
-   // string land[] = {"party","cow","house","walkway","bat","bench","cityscape","cloud","hut","sea1","shell","still1","still3","texture","orangutan","lottie"};
-   // int m = 1000;
-   string names[] = {"../../../DEUTCH/spring/schreibaufgaba/cover"};
+
    
-   /*for(int n =1; n<=192;n++){
-      if (!still.load("../../NPR_parallel/video/squirrel/squirrel"+to_string(n)+".png")) {
-         cout<<"what";
+   for(string n : names){
+      if (!still.load("../source_images/"+n+".png")) {
+         std::cout << "ERROR: Cannot load image! ";
          continue;
       }
       if (max(still.width(),still.height())>m){
@@ -164,51 +87,21 @@ int main(int argc, char** argv)
       }
       Image t = still.blur().tensor(true);
       // Image grey = still.grayscale().normalize();
-      // grey.save("../src/00"+n+"paint.png");
-      // still.normalize().save("../src/0123"+n+".png");
-      // still.wnormalize().save("../src/0weight"+n+".png");
-      // continue;
-      still = still.cnormalize().alphaBlend(still,.8);
-
-      Image background = still.paint(still,brush,0,.7);
-      background = still.paint(background,orb,80,.5);
-      still = still.paint(background,brush_thin,100,.9);
-      still.save("../video/squirrel/squirrel"+to_string(n)+".png");
-   }*/
-   // return 0;
-   int m = 1000;
-   for(string n : names){
-      if (!still.load("../source_images/"+n+".png")) {
-         cout<<"what";
-         continue;
-      }
-      // if (max(still.width(),still.height())>m){
-      //    still = still.resize((still.width()/(float)still.height())*(m),m);
-      // }
-      Image t = still.blur().tensor(true);
-      // Image grey = still.grayscale().normalize();
-      // grey.save("../src/00"+n+"paint.png");
-      // still.normalize().save("../src/0123"+n+".png");
-      // still.wnormalize().save("../src/0weight"+n+".png");
-      // continue;
-      // still = still.cnormalize().alphaBlend(still,1);
+      still = still.cnormalize().alphaBlend(still,1);
 
       Image background = still.paint(still,brush,0,1);
-
-      background = still.paint(background,orb,80,.8);
-      still = still.paint(background,brush_thin,130,.5);
-      still.save("../src/"+n+"paint1.png");
+      background = still.paint(background,brush,80,.4);
+      still = still.paint(background,circle,150,1);
+      still.save("../images/new/"+n+"paint1.png");
       // still.dirrected_gaussian_1(2,t).save("../src/"+n+"paintblend2.png");
    }
-   return 0;
+   // return 0;
 
 
-/*LINEART
-   // string names[] = {"still3","kid", "lottie", "man", "fam1", "walkway", "cow", "orangutan", "party", "still1", "cloud", "house", "shell", "sturgeon", "starfish", "bat", "texture", "coast", "cityscape", "woods", "bench", "hut", "sea1"};
-   // int m = 1000;
+/*LINEART*/
    for(string n : names){
       if (!still.load("../source_images/"+n+".png")) {
-         continue;
+         std::cout << "ERROR: Cannot load image! ";
       }
       if (max(still.width(),still.height())>m){
          still = still.resize((still.width()/(float)still.height())*(m),m);
@@ -224,12 +117,12 @@ int main(int argc, char** argv)
    
       Image line = ((grey.gaussian(sigma)).subtract(grey.gaussian(sigma*k))).threshold(cutoff,.2).dirrected_gaussian(1.2,t1);
 
-      line.invert().save("../out/"+n+"lineart.png");
+      line.invert().save("../images/new/"+n+"lineart.png");
       // Image white = still;
       // white.fill(Pixel{255,255,255});
-      // still.paint(white,brush_thin,90,.9).save("../out/"+n+"lineart1.png");
+      // still.paint(white,brush_thin,90,.9).save("../images/new/"+n+"lineart1.png");
 
-   }*/
+   }
    
 
 /* CHARCOAL & WATERCOLOR*/
@@ -237,6 +130,7 @@ int main(int argc, char** argv)
    // int m = 900;
    for(string n : names){
       if (!still.load("../source_images/"+n+".png")) {
+         std::cout << "ERROR: Cannot load image! ";
          continue;
       }
       if (max(still.width(),still.height())>m){
@@ -257,8 +151,8 @@ int main(int argc, char** argv)
       Image line = ((grey.dirrected_gaussian_1(sigma,t1)).dog(grey.dirrected_gaussian_1(sigma*k,t1),tau)).dirrected_gaussian(2.5,t1).threshold(cutoff,.008);
       Image grain = line.crand().rnoise(3).alphaBlend(line,mask);
       
-      line.save("../pm/"+n+"charcoal0.png");
-      grain.save("../pm/"+n+"charcoal1.png");
+      line.save("../images/new/"+n+"charcoal0.png");
+      grain.save("../images/new/"+n+"charcoal1.png");
 
       // for(int i=0; i<still.height(); i++){
       //    for(int j=0; j<still.width(); j++){
@@ -266,26 +160,26 @@ int main(int argc, char** argv)
       //    }
       // }
       // still = still.cquant(4).crand().blur();
-      // line.multiply(still).save("../out/"+n+"water.png");
+      line.multiply(still).save("../images/new/"+n+"water.png");
    }
    // return 0;*/
    
 /* CROSSHATCH & LINEART*/
-m = 950;
    Image pannel_;
    if (!pannel_.load("../texture/ink1.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      std::cout << "ERROR: Cannot load image! ";
       exit(0);
    }
    Image pannel_1;
    if (!pannel_1.load("../texture/ink2.png")) {
-      std::cout << "ERROR: Cannot load image! Exiting...\n";
+      std::cout << "ERROR: Cannot load image! ";
       exit(0);
    }
-   for(int n =1; n<=192;n++){
+   for(string n : names){
       Image pannel = pannel_;
       Image pannel1 = pannel_1;
-      if (!still.load("../../NPR_parallel/video/squirrel/squirrel"+to_string(n)+".png")) {
+      if (!still.load("../source_images/"+n+".png")) {
+         std::cout << "ERROR: Cannot load image! ";
          continue;
       }
       if (max(still.width(),still.height())>m){
@@ -338,7 +232,7 @@ m = 950;
       pannel = pannel.subtract(pannel1.invert());
       
 
-      pannel.darkest(black).subtract(line).save("../video/squirrel1/squirrel"+to_string(n)+".png");
+      pannel.darkest(black).subtract(line).save("../images/new/"+n+"ink.png");
       // col.alphaBlend(w.invert(),pannel.darkest(black)).save("../out/"+n+"coloredPencil.png");
    }
 
@@ -352,7 +246,7 @@ m = 950;
 
 
 //====================================================
-/* LIGHT EDGE... yikes
+/* 
 // binary threshold of a photo
 still = still.resize(still.width()*.8,still.height()*.8);
 float s_ = min(still.width(),still.height())/150.0f;
@@ -484,7 +378,7 @@ return 0;*/
 
    // // Image pastel;
    // // if (!pastel.load("../texture/pencil_mark.png")) {
-   // //    std::cout << "ERROR: Cannot load image! Exiting...\n";
+   // //    std::cout << "ERROR: Cannot load image! ";
    // //    exit(0);
    // // }
 
@@ -497,7 +391,7 @@ return 0;*/
    
    // Image center;
    // // if (!center.load("../build/center.png")) {
-   // //    std::cout << "ERROR: Cannot load image! Exiting...\n";
+   // //    std::cout << "ERROR: Cannot load image! ";
    // //    exit(0);
    // // }
    // center = cat.tensor(false);
