@@ -1,0 +1,3 @@
+ffmpeg -i ifh.MOV -vf fps=1 ifh%d.png
+
+ffmpeg -framerate 30 -i ifh%d.png -filter_complex "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2" -pix_fmt yuv420p -r 30 outputvideo.mp4

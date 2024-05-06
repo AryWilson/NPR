@@ -1264,7 +1264,7 @@ Image Image::gaussian(float sigma) const{
             unsigned char cutoff = 0;
             // go to location within kernel specified by vector so loop through gaussian vector not kernel
             // loop through 1d verticle
-            for(int x = -1*half, idx = 0; x<= half; x++, idx++){
+            for(int x = 0, idx = half; x<= half; x++, idx++){
                // get the coordinates of the pixel pointed to by the eigen vec
                if(vec.b>cutoff){
                   col_x = j + ((float)x)*vec_x; // move right some
@@ -1286,6 +1286,37 @@ Image Image::gaussian(float sigma) const{
                vec_x = vec.r/127.5 -1;
                vec_y = vec.g/127.5 -1;
 
+            }
+
+            // reset the tensor color
+            vec = tensor.get(i,j);
+            // get the x,y components of the first eigen vector
+            vec_x = vec.r/127.5 -1;
+            vec_y = vec.g/127.5 -1;
+            col_x = j;
+            col_y = i;
+            for(int x = 0, idx = half; x>= -1*half; x--, idx--){
+               // get the coordinates of the pixel pointed to by the eigen vec
+               if(vec.b>cutoff){
+                  col_x = j + ((float)x)*vec_x; // move right some
+                  col_y = i + ((float)x)*vec_y; // move up/down from eigen vec
+               }
+               // check bound of pixel asking for
+               col_x = (col_x>=0 & col_x<width())?col_x:j;
+               col_y = (col_y>=0 & col_y<height())?col_y:i;
+               float f = k[idx];
+               Pixel c = get(col_y,col_x);
+               if(x < 0){
+                  sumr += f*c.r;
+               sumg += f*c.g;
+               sumb += f*c.b;
+               }
+
+               // updte tensor and vectors
+               vec = tensor.get(col_y,col_x);
+               // get the x,y components of the first eigen vector
+               vec_x = vec.r/127.5 -1;
+               vec_y = vec.g/127.5 -1;
             }
             sumr = sumr/frac;
             sumg = sumg/frac;
@@ -1495,7 +1526,7 @@ Image Image::gaussian(float sigma) const{
             unsigned char cutoff = 0;
             // go to location within kernel specified by vector so loop through gaussian vector not kernel
             // loop through 1d verticle
-            for(int x = -1*half, idx = 0; x<= half; x++, idx++){
+            for(int x = 0, idx = half; x<= half; x++, idx++){
                // get the coordinates of the pixel pointed to by the eigen vec
                if(vec.b>cutoff){
                   col_x = j + ((float)x)*vec_x; // move right some
@@ -1510,6 +1541,30 @@ Image Image::gaussian(float sigma) const{
                sumg += f*c.g;
                sumb += f*c.b;
 
+            }
+            // reset the tensor color
+            vec = tensor.get(i,j);
+            // get the x,y components of the first eigen vector
+            vec_x = vec.r/127.5 -1;
+            vec_y = vec.g/127.5 -1;
+            col_x = j;
+            col_y = i;
+            for(int x = 0, idx = half; x>= -1*half; x--, idx--){
+               // get the coordinates of the pixel pointed to by the eigen vec
+               if(vec.b>cutoff){
+                  col_x = j + ((float)x)*vec_x; // move right some
+                  col_y = i + ((float)x)*vec_y; // move up/down from eigen vec
+               }
+               // check bound of pixel asking for
+               col_x = (col_x>=0 & col_x<width())?col_x:j;
+               col_y = (col_y>=0 & col_y<height())?col_y:i;
+               float f = k[idx];
+               Pixel c = get(col_y,col_x);
+               if(x < 0){
+                  sumr += f*c.r;
+               sumg += f*c.g;
+               sumb += f*c.b;
+               }
             }
             sumr = sumr/frac;
             sumg = sumg/frac;
@@ -2130,7 +2185,7 @@ Image Image::paint(const Image& background,const Image& fbrush, unsigned char cu
    
    std::vector<Test> tens;
    // get tensor for dirrected paint
-   Image t1 = blur().normalize().tensor(true).blur();
+   Image t1 = tensor(true).blur();
 
    for(int i = 0; i<h; i+=1){
       for(int j = 0; j<w; j+=1){
@@ -2155,7 +2210,7 @@ Image Image::paint(const Image& background,const Image& fbrush, unsigned char cu
       if(scale>.99){scale=.99;}
       if(scale<.65){scale=.65;}
 
-      if(t1.get(i,j).b>=cutoff && col.r==255 && col.g==255 && col.b==255){
+      if(t1.get(i,j).b>=cutoff && col.r==255 && col.g==255 && col.b==255){ //
          if(t1.get(i,j).b > 0){
             float temp_x = 1 - scale*((t1.get(i,j).b)/255.0f);
             Image b = brush.resize(brush.width()*temp_x,brush.height()*temp_x);
