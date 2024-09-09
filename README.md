@@ -41,7 +41,7 @@ project-template/build $ ../bin/pixmap_art
 ## Examples
 
 Original Image.
-![Alt text](images/bench.png)
+![Alt text](source_images/bench.png)
 
 Crosshatching filter.
 ![Alt text](images/benchcrosshatch.png)
